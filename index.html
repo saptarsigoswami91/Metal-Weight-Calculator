@@ -1,0 +1,2322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Metal Calc">
+<title>Metal Weight Calculator · CPWD/IS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&family=Orbitron:wght@700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;600&family=Rajdhani:wght@500;600;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════
+   BOTTOM MATERIAL SWITCHER (shared)
+══════════════════════════════════════════ */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+
+#mat-switcher {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9999;
+  background: #0a0a0a;
+  border-top: 1px solid #222;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+}
+
+.switcher-pills {
+  display: flex;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 50px;
+  padding: 4px;
+  gap: 3px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.sw-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 50px;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #555;
+  padding: 9px 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.sw-pill .sw-ico { font-size: 14px; }
+
+.sw-pill[data-cal="ms"].active  { background: #e8a020; color: #000; }
+.sw-pill[data-cal="al"].active  { background: #6aa0e6; color: #000; }
+.sw-pill[data-cal="ss"].active  { background: #3ddc84; color: #000; }
+.sw-pill:not(.active):hover { color: #aaa; }
+
+/* Calculator wrappers */
+.cal-wrapper {
+  display: none;
+  height: 100%;
+}
+.cal-wrapper.active { display: block; }
+
+/* ══════════════════════════════════════════
+   MS CALCULATOR — exact original styles
+══════════════════════════════════════════ */
+#cal-ms {
+  --bg: #0d0d0d;
+  --panel: #151515;
+  --border: #2a2a2a;
+  --accent: #e8a020;
+  --text: #e8e4dc;
+  --muted: #666;
+  --input-bg: #1a1a1a;
+  --result-bg: #1c1408;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  min-height: 100vh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  position: relative;
+}
+
+#cal-ms::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, #1a1a1a 39px, #1a1a1a 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, #1a1a1a 39px, #1a1a1a 40px);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#cal-ms > * { position: relative; z-index: 1; }
+
+#cal-ms header {
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
+  padding: 18px 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+#cal-ms header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 3px;
+  color: var(--accent);
+}
+
+#cal-ms header span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#cal-ms .density-tag {
+  margin-left: auto;
+  background: #1a1408;
+  border: 1px solid var(--accent);
+  padding: 4px 12px;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+#cal-ms .ms-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+#cal-ms .ms-sidebar {
+  position: sticky;
+  top: 80px;
+}
+
+#cal-ms .sidebar-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+#cal-ms .section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#cal-ms .section-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 2px;
+}
+
+#cal-ms .section-btn .icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+#cal-ms .section-btn .icon svg { fill: var(--muted); transition: fill 0.15s; }
+#cal-ms .section-btn:hover { border-color: var(--accent); background: #1a1a1a; }
+#cal-ms .section-btn.active { border-color: var(--accent); background: #1c1408; color: var(--accent); font-weight: 600; }
+#cal-ms .section-btn.active .icon svg { fill: var(--accent); }
+
+#cal-ms .main-panel { display: flex; flex-direction: column; gap: 20px; }
+
+#cal-ms .calc-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#cal-ms .card-header {
+  background: #1a1a1a;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+#cal-ms .card-header h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; letter-spacing: 2px; color: var(--accent);
+}
+
+#cal-ms .card-header .subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; margin-left: auto;
+}
+
+#cal-ms .card-body { padding: 24px 20px; }
+
+#cal-ms .fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+#cal-ms .field { display: flex; flex-direction: column; gap: 6px; }
+
+#cal-ms .field label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase;
+}
+
+#cal-ms .field-row {
+  display: flex; align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 2px; overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+#cal-ms .field-row:focus-within { border-color: var(--accent); }
+
+#cal-ms .field-row input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; padding: 9px 12px; width: 100%;
+}
+
+#cal-ms .field-row .unit {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+  color: var(--muted); padding: 0 10px;
+  border-left: 1px solid var(--border); background: #111;
+}
+
+#cal-ms .calc-btn {
+  background: var(--accent); color: #000; border: none;
+  padding: 11px 24px; font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem; letter-spacing: 2px; cursor: pointer;
+  border-radius: 2px; transition: background 0.15s, transform 0.1s; width: 100%;
+}
+
+#cal-ms .calc-btn:hover { background: #f5b030; }
+#cal-ms .calc-btn:active { transform: scale(0.99); }
+
+#cal-ms .result-box {
+  background: var(--result-bg); border: 1px solid var(--accent);
+  border-radius: 2px; padding: 20px; display: none; margin-top: 16px;
+}
+
+#cal-ms .result-box.show { display: block; animation: msFadeIn 0.2s ease; }
+@keyframes msFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+#cal-ms .result-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;
+}
+
+#cal-ms .result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+#cal-ms .result-item { border-left: 3px solid var(--accent); padding-left: 12px; }
+
+#cal-ms .result-item .r-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+  letter-spacing: 1px; color: var(--muted); text-transform: uppercase; margin-bottom: 2px;
+}
+
+#cal-ms .result-item .r-value {
+  font-family: 'IBM Plex Mono', monospace; font-size: 1.35rem; font-weight: 600; color: var(--accent);
+}
+
+#cal-ms .result-item .r-unit {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-left: 4px;
+}
+
+#cal-ms .formula-note {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--muted);
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid #222; line-height: 1.6;
+}
+
+#cal-ms .diagram-area {
+  display: flex; justify-content: center; align-items: center; margin-bottom: 20px;
+}
+#cal-ms .diagram-area svg { filter: drop-shadow(0 0 8px rgba(232,160,32,0.15)); }
+
+#cal-ms .info-note {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--muted);
+  background: #111; border: 1px solid #222; padding: 8px 12px;
+  border-radius: 2px; margin-bottom: 16px; line-height: 1.6;
+}
+
+#cal-ms .ms-hidden { display: none !important; }
+
+/* MS Mobile */
+@media (max-width: 720px) {
+  #cal-ms .ms-container { grid-template-columns: 1fr; padding: 16px 12px; gap: 16px; }
+  #cal-ms .ms-sidebar { position: static; }
+  #cal-ms .section-list { flex-direction: row; flex-wrap: wrap; }
+  #cal-ms .section-btn { flex: 1; min-width: 110px; font-size: 0.75rem; padding: 9px 8px; }
+  #cal-ms .section-btn .icon { width: 22px; height: 22px; }
+  #cal-ms header { padding: 14px 16px; }
+  #cal-ms header h1 { font-size: 1.5rem; }
+  #cal-ms .fields-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  #cal-ms .result-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #cal-ms .card-body { padding: 16px 14px; }
+}
+
+/* ══════════════════════════════════════════
+   ALUMINIUM CALCULATOR — exact original styles
+══════════════════════════════════════════ */
+#cal-al {
+  background: #f0f4f8;
+  color: #1a2540;
+  font-family: 'Nunito Sans', sans-serif;
+  min-height: 100vh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+#cal-al header {
+  background: #1a2540;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 62px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+
+#cal-al header h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.45rem; font-weight: 700; letter-spacing: 1px; color: #fff; line-height: 1;
+}
+
+#cal-al header h1 span {
+  color: #90caf9; font-weight: 400; font-size: 0.85rem; display: block; letter-spacing: 2px;
+}
+
+#cal-al .al-header-badges { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+#cal-al .al-badge {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: #cfd8dc; padding: 3px 10px; border-radius: 20px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; letter-spacing: 1px;
+}
+
+#cal-al .al-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 62px);
+}
+
+#cal-al .al-sidebar {
+  background: #1a2540;
+  padding: 20px 0;
+  position: sticky;
+  top: 62px;
+  height: calc(100vh - 62px);
+  overflow-y: auto;
+}
+
+#cal-al .al-sidebar::-webkit-scrollbar { width: 4px; }
+#cal-al .al-sidebar::-webkit-scrollbar-thumb { background: #3a4a70; border-radius: 2px; }
+
+#cal-al .al-sb-group {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 2px;
+  color: #546e9a; text-transform: uppercase; padding: 14px 20px 6px;
+}
+
+#cal-al .al-sec-btn {
+  width: 100%; background: transparent; border: none;
+  border-left: 3px solid transparent; color: #90a4c8;
+  padding: 10px 18px; text-align: left; cursor: pointer;
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.85rem; font-weight: 400;
+  transition: all 0.15s; display: flex; align-items: center; gap: 12px;
+}
+
+#cal-al .al-sec-btn .sec-icon {
+  width: 28px; height: 28px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.04); border-radius: 4px;
+}
+
+#cal-al .al-sec-btn:hover { background: rgba(255,255,255,0.05); color: #e0e8ff; border-left-color: #546e9a; }
+#cal-al .al-sec-btn.active { background: #243059; color: #90caf9; border-left-color: #90caf9; font-weight: 600; }
+#cal-al .al-sec-btn.active .sec-icon { background: rgba(144,202,249,0.12); }
+
+#cal-al .al-main { padding: 28px 20px; max-width: 900px; }
+
+#cal-al .al-calc-card {
+  background: #fff; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 2px 16px rgba(26,37,64,0.08); border: 1px solid #d0d9e8; margin-bottom: 20px;
+}
+
+#cal-al .al-card-header {
+  background: linear-gradient(135deg, #1565c0 0%, #1a2540 100%);
+  padding: 18px 24px; display: flex; align-items: center; gap: 14px;
+}
+
+#cal-al .al-card-header-icon {
+  width: 44px; height: 44px; background: rgba(255,255,255,0.12);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+#cal-al .al-card-header h2 {
+  font-family: 'Rajdhani', sans-serif; font-size: 1.4rem; font-weight: 700;
+  letter-spacing: 0.5px; color: #fff; line-height: 1.1;
+}
+
+#cal-al .al-card-header .subtitle { font-size: 0.72rem; color: #90caf9; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; margin-top: 2px; }
+#cal-al .al-card-body { padding: 24px; }
+
+#cal-al .al-diag-wrap {
+  display: flex; justify-content: center; margin-bottom: 22px;
+  background: #e3eeff; border-radius: 8px; padding: 16px; border: 1px solid #c0d4f5;
+}
+
+#cal-al .al-info-note {
+  background: #fff8e1; border-left: 3px solid #f9a825;
+  padding: 8px 14px; border-radius: 0 6px 6px 0;
+  font-size: 0.78rem; color: #795548; margin-bottom: 18px; line-height: 1.6;
+}
+
+#cal-al .al-fields-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 16px; margin-bottom: 20px;
+}
+
+#cal-al .al-field label {
+  display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.8px;
+  color: #6b7a99; text-transform: uppercase; margin-bottom: 6px;
+}
+
+#cal-al .al-input-row {
+  display: flex; align-items: center;
+  border: 1.5px solid #d0d9e8; border-radius: 6px; overflow: hidden;
+  background: #f7f9fc; transition: border-color 0.2s;
+}
+
+#cal-al .al-input-row:focus-within {
+  border-color: #1565c0; box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
+}
+
+#cal-al .al-input-row input {
+  flex: 1; border: none; outline: none; background: transparent;
+  color: #1a2540; font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; padding: 9px 12px; width: 100%;
+}
+
+#cal-al .al-input-row .al-unit {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6b7a99;
+  padding: 0 10px; border-left: 1px solid #d0d9e8; background: #eef2f8; white-space: nowrap;
+}
+
+#cal-al .al-calc-btn {
+  width: 100%; background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: #fff; border: none; padding: 12px 28px; border-radius: 7px;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700;
+  letter-spacing: 2px; cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 3px 10px rgba(21,101,192,0.25);
+}
+
+#cal-al .al-calc-btn:hover { background: linear-gradient(135deg, #0d47a1, #1565c0); box-shadow: 0 4px 14px rgba(21,101,192,0.35); transform: translateY(-1px); }
+#cal-al .al-calc-btn:active { transform: translateY(0); }
+
+#cal-al .al-result-box {
+  display: none; margin-top: 20px; background: #f0faf6;
+  border: 1.5px solid #0d8a6e; border-radius: 8px; padding: 20px; animation: alFadeIn 0.2s ease;
+}
+#cal-al .al-result-box.show { display: block; }
+@keyframes alFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+#cal-al .al-result-title {
+  font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; font-weight: 700;
+  letter-spacing: 2px; color: #0d8a6e; text-transform: uppercase; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+#cal-al .al-result-title::after { content: ''; flex: 1; height: 1px; background: #b2dfdb; }
+
+#cal-al .al-result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 12px; margin-bottom: 14px; }
+
+#cal-al .al-result-item {
+  background: white; border: 1px solid #b2dfdb; border-radius: 6px; padding: 12px 14px;
+}
+
+#cal-al .al-result-item .r-label {
+  font-size: 0.67rem; font-weight: 600; letter-spacing: 0.8px;
+  color: #6b7a99; text-transform: uppercase; margin-bottom: 4px;
+}
+
+#cal-al .al-result-item .r-value {
+  font-family: 'IBM Plex Mono', monospace; font-size: 1.3rem; font-weight: 600; color: #0d8a6e; line-height: 1;
+}
+
+#cal-al .al-result-item .r-unit {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: #6b7a99; margin-left: 4px;
+}
+
+#cal-al .al-formula-note {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: #607d8b;
+  background: #eceff1; padding: 8px 12px; border-radius: 4px; line-height: 1.8; word-break: break-word;
+}
+
+#cal-al .al-tbl-wrap { overflow-x: auto; margin-bottom: 18px; border-radius: 6px; border: 1px solid #d0d9e8; }
+#cal-al .al-profile-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+#cal-al .al-profile-table th { background: #e3eeff; color: #1565c0; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; letter-spacing: 1px; padding: 8px 10px; text-align: left; border-bottom: 1px solid #d0d9e8; white-space: nowrap; }
+#cal-al .al-profile-table td { padding: 7px 10px; border-bottom: 1px solid #eef0f4; color: #1a2540; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; white-space: nowrap; }
+#cal-al .al-profile-table tr:last-child td { border-bottom: none; }
+#cal-al .al-profile-table tr:hover td { background: #f0f6ff; }
+
+#cal-al .al-use-btn {
+  background: #1565c0; color: white; border: none; padding: 3px 10px;
+  border-radius: 4px; font-size: 0.68rem; cursor: pointer;
+  font-family: 'Nunito Sans', sans-serif; font-weight: 600; letter-spacing: 0.5px;
+}
+#cal-al .al-use-btn:hover { background: #0d47a1; }
+
+#cal-al .al-or-divider {
+  text-align: center; color: #6b7a99; font-size: 0.75rem; margin: 4px 0 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+#cal-al .al-or-divider::before, #cal-al .al-or-divider::after { content: ''; flex: 1; height: 1px; background: #d0d9e8; }
+
+#cal-al .al-hidden { display: none !important; }
+
+/* AL Mobile */
+@media (max-width: 720px) {
+  #cal-al .al-layout { grid-template-columns: 1fr; }
+  #cal-al .al-sidebar { position: static; height: auto; display: flex; flex-wrap: wrap; padding: 10px; gap: 4px; }
+  #cal-al .al-sb-group { display: none; }
+  #cal-al .al-sec-btn { width: auto; flex: 1; min-width: 120px; border-left: none; border-bottom: 3px solid transparent; font-size: 0.78rem; padding: 8px 10px; }
+  #cal-al .al-sec-btn.active { border-bottom-color: #90caf9; border-left-color: transparent; }
+  #cal-al .al-main { padding: 16px 12px; }
+  #cal-al header { padding: 0 16px; }
+  #cal-al .al-header-badges { display: none; }
+  #cal-al .al-fields-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  #cal-al .al-result-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #cal-al .al-card-body { padding: 16px 14px; }
+}
+
+/* ══════════════════════════════════════════
+   STAINLESS STEEL CALCULATOR — high contrast theme
+   Background: deep navy | Text: crisp white/light
+══════════════════════════════════════════ */
+
+/* SS colour tokens */
+#cal-ss {
+  --ss-bg:        #0d1526;
+  --ss-surface:   #141e33;
+  --ss-surface2:  #1a2640;
+  --ss-border:    #2e3f5c;
+  --ss-accent:    #60b8ff;
+  --ss-accent2:   #38d9a9;
+  --ss-text:      #e8f0fe;
+  --ss-text2:     #b0c4de;
+  --ss-label:     #7fa0c8;
+  --ss-muted:     #8099b8;
+  --ss-input-bg:  #0e1929;
+  --ss-unit-bg:   #0a1220;
+}
+
+#cal-ss {
+  background: var(--ss-bg);
+  color: var(--ss-text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* Header */
+#cal-ss .ss-header {
+  background: linear-gradient(90deg, #091830, #0f2040);
+  border-bottom: 2px solid var(--ss-accent);
+  padding: 0 28px; height: 66px;
+  display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,.6);
+}
+
+#cal-ss .ss-logo { width: 42px; height: 42px; flex-shrink: 0; }
+
+#cal-ss .ss-htitle {
+  font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 700;
+  letter-spacing: 1.5px; color: #ffffff; line-height: 1.15;
+}
+
+#cal-ss .ss-htitle small {
+  display: block; font-family: 'DM Mono', monospace; font-size: 0.58rem;
+  font-weight: 300; letter-spacing: 3px; color: var(--ss-text2); margin-top: 2px;
+}
+
+#cal-ss .ss-hbadges { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+#cal-ss .ss-hbadge {
+  background: rgba(96,184,255,0.15); border: 1px solid rgba(96,184,255,0.4);
+  color: #a8d8ff; padding: 4px 12px; border-radius: 20px;
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 1px; white-space: nowrap;
+}
+
+/* Grade bar */
+#cal-ss .ss-grade-bar {
+  background: #0a1525; border-bottom: 1px solid var(--ss-border);
+  padding: 10px 28px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+#cal-ss .ss-gl {
+  font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 2px;
+  color: var(--ss-text2); text-transform: uppercase; margin-right: 4px;
+}
+
+#cal-ss .ss-gb {
+  background: var(--ss-surface2); border: 1px solid var(--ss-border); color: var(--ss-text2);
+  padding: 5px 14px; border-radius: 20px; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 1px; transition: all .15s;
+}
+#cal-ss .ss-gb:hover { border-color: var(--ss-accent); color: var(--ss-accent); }
+#cal-ss .ss-gb.active { background: rgba(96,184,255,0.15); border-color: var(--ss-accent); color: var(--ss-accent); font-weight: 600; }
+
+#cal-ss .ss-dens {
+  margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem;
+  color: var(--ss-accent2); background: rgba(56,217,169,0.12);
+  border: 1px solid rgba(56,217,169,0.4); padding: 4px 14px; border-radius: 20px; letter-spacing: 1px;
+}
+
+/* Layout */
+#cal-ss .ss-layout {
+  display: grid; grid-template-columns: 255px 1fr; min-height: calc(100vh - 106px);
+}
+
+/* Sidebar */
+#cal-ss .ss-sidebar {
+  background: var(--ss-surface); border-right: 1px solid var(--ss-border);
+  padding: 14px 0; position: sticky; top: 106px;
+  height: calc(100vh - 106px); overflow-y: auto;
+}
+#cal-ss .ss-sidebar::-webkit-scrollbar { width: 3px; }
+#cal-ss .ss-sidebar::-webkit-scrollbar-thumb { background: var(--ss-border); border-radius: 2px; }
+
+#cal-ss .ss-sbg {
+  font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 2.5px;
+  color: var(--ss-muted); text-transform: uppercase; padding: 13px 18px 4px;
+}
+
+#cal-ss .ss-sbb {
+  width: 100%; background: transparent; border: none; border-left: 3px solid transparent;
+  color: var(--ss-text2); padding: 9px 16px 9px 13px; text-align: left; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 400;
+  transition: all .13s; display: flex; align-items: center; gap: 10px;
+}
+
+#cal-ss .ss-si {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; background: rgba(255,255,255,.05);
+  font-size: 13px;
+}
+
+#cal-ss .ss-sbb:hover { background: rgba(96,184,255,.08); color: #cce4ff; border-left-color: var(--ss-border); }
+#cal-ss .ss-sbb.active { background: rgba(96,184,255,.12); color: var(--ss-accent); border-left-color: var(--ss-accent); font-weight: 700; }
+#cal-ss .ss-sbb.active .ss-si { background: rgba(96,184,255,.15); }
+
+/* Main content */
+#cal-ss .ss-main { padding: 22px 24px; max-width: 920px; }
+#cal-ss .ss-hidden { display: none !important; }
+
+/* Cards */
+#cal-ss .ss-card {
+  background: var(--ss-surface); border: 1px solid var(--ss-border); border-radius: 10px;
+  overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.35); margin-bottom: 18px;
+}
+
+#cal-ss .ss-ch {
+  background: linear-gradient(135deg, #0e2245, #172e5a);
+  padding: 16px 20px; border-bottom: 1px solid var(--ss-border);
+  display: flex; align-items: center; gap: 13px;
+}
+
+#cal-ss .ss-chi {
+  width: 44px; height: 44px;
+  background: rgba(96,184,255,.15); border: 1px solid rgba(96,184,255,.35);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+#cal-ss .ss-ch h2 {
+  font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700;
+  color: #ffffff; letter-spacing: .5px; line-height: 1.15;
+}
+
+#cal-ss .ss-ch .ss-sub {
+  font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 2px;
+  color: var(--ss-text2); margin-top: 3px;
+}
+
+#cal-ss .ss-cb { padding: 20px; background: var(--ss-surface); }
+
+/* Note box */
+#cal-ss .ss-note {
+  background: rgba(96,184,255,.07); border-left: 3px solid var(--ss-accent);
+  border-radius: 0 6px 6px 0; padding: 9px 14px;
+  font-size: .76rem; color: var(--ss-text2); line-height: 1.65; margin-bottom: 16px;
+}
+#cal-ss .ss-note strong { color: var(--ss-accent); }
+
+/* Fields */
+#cal-ss .ss-fg {
+  display: grid; grid-template-columns: repeat(auto-fill,minmax(164px,1fr));
+  gap: 13px; margin-bottom: 16px;
+}
+
+#cal-ss .ss-field label {
+  display: block; font-family: 'DM Mono', monospace; font-size: .65rem;
+  letter-spacing: 1.2px; color: var(--ss-label); text-transform: uppercase; margin-bottom: 6px;
+  font-weight: 600;
+}
+
+#cal-ss .ss-ir {
+  display: flex; align-items: center;
+  background: var(--ss-input-bg); border: 1.5px solid var(--ss-border);
+  border-radius: 7px; overflow: hidden; transition: border-color .15s;
+}
+#cal-ss .ss-ir:focus-within {
+  border-color: var(--ss-accent); box-shadow: 0 0 0 3px rgba(96,184,255,.12);
+}
+
+#cal-ss .ss-ir input, #cal-ss .ss-ir select {
+  flex: 1; border: none; outline: none; background: transparent;
+  color: #ffffff; font-family: 'DM Mono', monospace;
+  font-size: .92rem; padding: 10px 12px; width: 100%; min-width: 0;
+}
+#cal-ss .ss-ir select { cursor: pointer; }
+#cal-ss .ss-ir input::placeholder { color: var(--ss-muted); }
+
+#cal-ss .ss-ir .ss-u {
+  font-family: 'DM Mono', monospace; font-size: .65rem;
+  color: var(--ss-text2); padding: 0 11px;
+  border-left: 1px solid var(--ss-border); background: var(--ss-unit-bg); white-space: nowrap;
+}
+
+/* Calculate button */
+#cal-ss .ss-btn {
+  width: 100%; background: linear-gradient(135deg, #1255a0, #1a6ec7);
+  border: 1.5px solid var(--ss-accent); color: #ffffff;
+  padding: 12px 22px; border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif; font-size: .95rem; font-weight: 700;
+  letter-spacing: 2px; cursor: pointer; transition: all .15s;
+  box-shadow: 0 3px 12px rgba(96,184,255,.2);
+}
+#cal-ss .ss-btn:hover {
+  background: linear-gradient(135deg, #1a6ec7, #2080d8);
+  box-shadow: 0 4px 18px rgba(96,184,255,.35); transform: translateY(-1px);
+}
+#cal-ss .ss-btn:active { transform: translateY(0); }
+
+/* Result box */
+#cal-ss .ss-result {
+  display: none; margin-top: 16px;
+  background: rgba(56,217,169,.08); border: 1.5px solid rgba(56,217,169,.4);
+  border-radius: 9px; padding: 16px 18px; animation: ssFadeIn .22s ease;
+}
+#cal-ss .ss-result.show { display: block; }
+@keyframes ssFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+#cal-ss .ss-rt {
+  font-family: 'DM Mono', monospace; font-size: .65rem; letter-spacing: 2px;
+  color: var(--ss-accent2); text-transform: uppercase; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px; font-weight: 600;
+}
+#cal-ss .ss-rt::after { content: ''; flex: 1; height: 1px; background: rgba(56,217,169,.3); }
+
+#cal-ss .ss-rg {
+  display: grid; grid-template-columns: repeat(auto-fill,minmax(170px,1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+
+#cal-ss .ss-ri {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(56,217,169,.25);
+  border-radius: 7px; padding: 11px 13px;
+}
+
+#cal-ss .ss-ri .ss-rl {
+  font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px;
+  color: var(--ss-text2); text-transform: uppercase; margin-bottom: 4px;
+}
+
+#cal-ss .ss-ri .ss-rv {
+  font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 600;
+  color: var(--ss-accent2); line-height: 1;
+}
+
+#cal-ss .ss-ri .ss-ru {
+  font-family: 'DM Mono', monospace; font-size: .65rem;
+  color: var(--ss-text2); margin-left: 4px;
+}
+
+#cal-ss .ss-fml {
+  font-family: 'DM Mono', monospace; font-size: .65rem;
+  color: var(--ss-text2); background: rgba(255,255,255,.05);
+  padding: 8px 12px; border-radius: 5px; line-height: 1.8; word-break: break-word;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+/* Tables */
+#cal-ss .ss-tw {
+  border: 1px solid var(--ss-border); border-radius: 7px;
+  overflow: hidden; margin-bottom: 12px; overflow-x: auto;
+}
+#cal-ss .ss-tw table { width: 100%; border-collapse: collapse; }
+#cal-ss .ss-tw th {
+  background: rgba(96,184,255,.12); color: var(--ss-accent);
+  font-family: 'DM Mono', monospace; font-size: .62rem; letter-spacing: .8px;
+  padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--ss-border); white-space: nowrap;
+}
+#cal-ss .ss-tw td {
+  padding: 7px 10px; border-bottom: 1px solid rgba(46,63,92,.6);
+  color: var(--ss-text); font-family: 'DM Mono', monospace; font-size: .72rem; white-space: nowrap;
+}
+#cal-ss .ss-tw tr:last-child td { border-bottom: none; }
+#cal-ss .ss-tw tr:hover td { background: rgba(96,184,255,.05); }
+
+#cal-ss .ss-ub {
+  background: rgba(96,184,255,.15); color: var(--ss-accent);
+  border: 1px solid rgba(96,184,255,.4); padding: 3px 10px; border-radius: 4px;
+  font-size: .65rem; cursor: pointer; font-family: 'DM Mono', monospace;
+  font-weight: 600; transition: all .12s;
+}
+#cal-ss .ss-ub:hover { background: rgba(96,184,255,.28); }
+
+/* Divider */
+#cal-ss .ss-div {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'DM Mono', monospace; font-size: .65rem;
+  color: var(--ss-muted); margin: 8px 0 14px; letter-spacing: 1px;
+}
+#cal-ss .ss-div::before, #cal-ss .ss-div::after {
+  content: ''; flex: 1; height: 1px; background: var(--ss-border);
+}
+
+#cal-ss .ss-sheet-note {
+  background: rgba(96,184,255,.06); border: 1px solid rgba(96,184,255,.2);
+  border-radius: 6px; padding: 10px 14px; font-family: 'DM Mono', monospace;
+  font-size: .68rem; color: var(--ss-text2); line-height: 1.7; margin-top: 14px;
+}
+
+/* Railing builder */
+#cal-ss .ss-add-row {
+  width: 100%; background: transparent; border: 1px dashed var(--ss-border);
+  color: var(--ss-muted); padding: 9px; border-radius: 7px;
+  cursor: pointer; font-family: 'DM Mono', monospace; font-size: .72rem;
+  transition: all .15s; margin-top: 6px; letter-spacing: .5px;
+}
+#cal-ss .ss-add-row:hover { border-color: var(--ss-accent); color: var(--ss-accent); }
+
+#cal-ss .ss-del-btn {
+  background: transparent; border: 1px solid #5c2a2a; color: #c07070;
+  padding: 6px 10px; border-radius: 5px; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: .7rem; transition: all .12s;
+}
+#cal-ss .ss-del-btn:hover { border-color: #e05555; color: #e05555; }
+
+#cal-ss .ss-rail-lbl {
+  font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px;
+  color: var(--ss-label); text-transform: uppercase; margin-bottom: 5px;
+}
+
+/* SS railing inputs */
+#cal-ss #ssRailRows input,
+#cal-ss #ssRailRows select {
+  color: #ffffff !important;
+}
+
+/* SS Mobile */
+@media (max-width: 760px) {
+  #cal-ss .ss-layout { grid-template-columns: 1fr; }
+  #cal-ss .ss-sidebar {
+    position: static; height: auto; display: flex; flex-wrap: wrap;
+    padding: 8px; gap: 3px; top: auto; background: #0a1525;
+  }
+  #cal-ss .ss-sbg { display: none; }
+  #cal-ss .ss-sbb {
+    width: auto; flex: 1; min-width: 100px; font-size: .72rem; padding: 7px 8px;
+    border-left: none; border-bottom: 2px solid transparent;
+  }
+  #cal-ss .ss-sbb.active { border-bottom-color: var(--ss-accent); border-left-color: transparent; }
+  #cal-ss .ss-main { padding: 14px 12px; }
+  #cal-ss .ss-header { padding: 0 14px; }
+  #cal-ss .ss-hbadges { display: none; }
+  #cal-ss .ss-grade-bar {
+    padding: 8px 12px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  }
+  #cal-ss .ss-grade-bar::-webkit-scrollbar { display: none; }
+  #cal-ss .ss-gb { white-space: nowrap; flex-shrink: 0; }
+  #cal-ss .ss-fg { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #cal-ss .ss-rg { grid-template-columns: 1fr 1fr; gap: 8px; }
+  #cal-ss .ss-cb { padding: 14px 12px; }
+  #cal-ss .ss-ch h2 { font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+   CALCULATOR WRAPPERS
+══════════════════════════════════════════ -->
+
+<!-- ██ MS CALCULATOR ██ -->
+<div class="cal-wrapper active" id="cal-ms">
+
+<header>
+  <h1>MS WEIGHT CALC</h1>
+  <span>Mild Steel · Section Calculator</span>
+  <div class="density-tag">ρ = 7850 kg/m³</div>
+</header>
+
+<div class="ms-container">
+  <div class="ms-sidebar">
+    <div class="sidebar-label">Select Section</div>
+    <div class="section-list">
+      <button class="section-btn active" data-section="ms_round" onclick="msShow('round')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><circle cx="16" cy="16" r="12" stroke="#888" stroke-width="2" fill="none"/><circle cx="16" cy="16" r="6" fill="#888"/></svg></span>Round Bar (Solid)
+      </button>
+      <button class="section-btn" data-section="ms_round_hollow" onclick="msShow('round_hollow')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><circle cx="16" cy="16" r="12" stroke="#888" stroke-width="2" fill="none"/><circle cx="16" cy="16" r="7" stroke="#888" stroke-width="2" fill="none"/></svg></span>Round Hollow (Pipe)
+      </button>
+      <button class="section-btn" data-section="ms_square" onclick="msShow('square')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="4" y="4" width="24" height="24" stroke="#888" stroke-width="2" fill="#888" opacity="0.6"/></svg></span>Square Bar (Solid)
+      </button>
+      <button class="section-btn" data-section="ms_square_hollow" onclick="msShow('square_hollow')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="4" y="4" width="24" height="24" stroke="#888" stroke-width="2" fill="none"/><rect x="9" y="9" width="14" height="14" stroke="#888" stroke-width="2" fill="none"/></svg></span>Square Hollow (SHS)
+      </button>
+      <button class="section-btn" data-section="ms_rect_hollow" onclick="msShow('rect_hollow')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="2" y="7" width="28" height="18" stroke="#888" stroke-width="2" fill="none"/><rect x="7" y="12" width="18" height="8" stroke="#888" stroke-width="2" fill="none"/></svg></span>Rectangular Hollow (RHS)
+      </button>
+      <button class="section-btn" data-section="ms_flat" onclick="msShow('flat')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="2" y="11" width="28" height="10" stroke="#888" stroke-width="2" fill="#888" opacity="0.6"/></svg></span>Flat Bar
+      </button>
+      <button class="section-btn" data-section="ms_tee" onclick="msShow('tee')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="2" y="4" width="28" height="7" fill="#888" opacity="0.7"/><rect x="12" y="11" width="8" height="17" fill="#888" opacity="0.7"/></svg></span>Tee Section
+      </button>
+      <button class="section-btn" data-section="ms_zee" onclick="msShow('zee')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="14" y="4" width="14" height="6" fill="#888" opacity="0.7"/><rect x="7" y="13" width="18" height="6" fill="#888" opacity="0.7"/><rect x="4" y="22" width="14" height="6" fill="#888" opacity="0.7"/></svg></span>Z Section
+      </button>
+      <button class="section-btn" data-section="ms_angle" onclick="msShow('angle')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="4" y="4" width="7" height="24" fill="#888" opacity="0.7"/><rect x="11" y="21" width="17" height="7" fill="#888" opacity="0.7"/></svg></span>Angle Section (L)
+      </button>
+      <button class="section-btn" data-section="ms_channel" onclick="msShow('channel')">
+        <span class="icon"><svg viewBox="0 0 32 32" width="24" height="24"><rect x="4" y="4" width="7" height="24" fill="#888" opacity="0.7"/><rect x="11" y="4" width="15" height="7" fill="#888" opacity="0.7"/><rect x="11" y="21" width="15" height="7" fill="#888" opacity="0.7"/></svg></span>Channel Section (C)
+      </button>
+    </div>
+  </div>
+
+  <div class="main-panel">
+
+    <div class="calc-card" id="ms_sec_round">
+      <div class="card-header"><h2>Round Bar — Solid</h2><span class="subtitle">CIRCULAR CROSS-SECTION</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 120 120" width="100" height="100"><circle cx="60" cy="60" r="50" fill="#1c1408" stroke="#e8a020" stroke-width="2"/><line x1="60" y1="60" x2="110" y2="60" stroke="#e8a020" stroke-width="1" stroke-dasharray="4,2"/><text x="75" y="55" fill="#e8a020" font-size="10" font-family="monospace">D/2</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Diameter (D)</label><div class="field-row"><input type="number" id="ms_rs_d" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_rs_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('round_solid')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_round"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_round_hollow">
+      <div class="card-header"><h2>Round Hollow — Pipe</h2><span class="subtitle">CHS / ERW TUBE</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 120 120" width="100" height="100"><circle cx="60" cy="60" r="50" fill="none" stroke="#e8a020" stroke-width="2"/><circle cx="60" cy="60" r="35" fill="none" stroke="#e8a020" stroke-width="1.5" stroke-dasharray="4,2"/><text x="65" y="55" fill="#e8a020" font-size="9" font-family="monospace">OD</text><text x="65" y="70" fill="#666" font-size="9" font-family="monospace">ID</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Outer Diameter (OD)</label><div class="field-row"><input type="number" id="ms_rh_od" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Wall Thickness (t)</label><div class="field-row"><input type="number" id="ms_rh_t" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_rh_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('round_hollow')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_round_hollow"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_square">
+      <div class="card-header"><h2>Square Bar — Solid</h2><span class="subtitle">SOLID SQUARE SECTION</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 120 120" width="100" height="100"><rect x="10" y="10" width="100" height="100" fill="#1c1408" stroke="#e8a020" stroke-width="2"/><text x="45" y="62" fill="#e8a020" font-size="11" font-family="monospace">a × a</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Side (a)</label><div class="field-row"><input type="number" id="ms_ss_a" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_ss_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('square_solid')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_square"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_square_hollow">
+      <div class="card-header"><h2>Square Hollow Section — SHS</h2><span class="subtitle">HOLLOW SQUARE TUBE</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 120 120" width="100" height="100"><rect x="8" y="8" width="104" height="104" fill="none" stroke="#e8a020" stroke-width="2"/><rect x="26" y="26" width="68" height="68" fill="none" stroke="#e8a020" stroke-width="1.5" stroke-dasharray="4,2"/><text x="30" y="20" fill="#e8a020" font-size="9" font-family="monospace">A (outer)</text><text x="30" y="95" fill="#666" font-size="9" font-family="monospace">t</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Outer Side (A)</label><div class="field-row"><input type="number" id="ms_sh_a" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Wall Thickness (t)</label><div class="field-row"><input type="number" id="ms_sh_t" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_sh_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('square_hollow')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_square_hollow"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_rect_hollow">
+      <div class="card-header"><h2>Rectangular Hollow Section — RHS</h2><span class="subtitle">HOLLOW RECTANGULAR TUBE</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 160 100" width="140" height="90"><rect x="8" y="8" width="144" height="84" fill="none" stroke="#e8a020" stroke-width="2"/><rect x="24" y="22" width="112" height="56" fill="none" stroke="#e8a020" stroke-width="1.5" stroke-dasharray="4,2"/><text x="62" y="6" fill="#e8a020" font-size="9" font-family="monospace">B (width)</text><text x="2" y="55" fill="#e8a020" font-size="9" font-family="monospace">H</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Width (B)</label><div class="field-row"><input type="number" id="ms_rhs_b" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Height (H)</label><div class="field-row"><input type="number" id="ms_rhs_h" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Wall Thickness (t)</label><div class="field-row"><input type="number" id="ms_rhs_t" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_rhs_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('rhs')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_rect_hollow"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_flat">
+      <div class="card-header"><h2>Flat Bar</h2><span class="subtitle">SOLID FLAT SECTION</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 160 70" width="140" height="60"><rect x="8" y="16" width="144" height="38" fill="#1c1408" stroke="#e8a020" stroke-width="2"/><text x="65" y="40" fill="#e8a020" font-size="10" font-family="monospace">W × T</text><text x="58" y="10" fill="#666" font-size="9" font-family="monospace">Width (W)</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Width (W)</label><div class="field-row"><input type="number" id="ms_fb_w" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Thickness (T)</label><div class="field-row"><input type="number" id="ms_fb_t" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_fb_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('flat')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_flat"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_tee">
+      <div class="card-header"><h2>Tee Section — T</h2><span class="subtitle">STRUCTURAL TEE</span></div>
+      <div class="card-body">
+        <div class="diagram-area"><svg viewBox="0 0 200 170" width="170" height="140"><rect x="15" y="15" width="170" height="20" fill="#1c1408" stroke="#e8a020" stroke-width="1.5"/><rect x="85" y="35" width="30" height="110" fill="#1c1408" stroke="#e8a020" stroke-width="1.5"/><text x="100" y="12" fill="#e8a020" font-size="10" font-family="monospace" text-anchor="middle">Flange B, tf</text><text x="130" y="95" fill="#e8a020" font-size="10" font-family="monospace">Web H, tw</text></svg></div>
+        <div class="fields-grid">
+          <div class="field"><label>Flange Width (B)</label><div class="field-row"><input type="number" id="ms_tee_b" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Flange Thickness (tf)</label><div class="field-row"><input type="number" id="ms_tee_tf" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Web Height (H)</label><div class="field-row"><input type="number" id="ms_tee_h" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Web Thickness (tw)</label><div class="field-row"><input type="number" id="ms_tee_tw" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_tee_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('tee')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_tee"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_zee">
+      <div class="card-header"><h2>Z Section</h2><span class="subtitle">STRUCTURAL Z-PURLIN</span></div>
+      <div class="card-body">
+        <div class="info-note">All flanges assumed equal. Web is vertical plate. Thickness applies to all elements.</div>
+        <div class="fields-grid">
+          <div class="field"><label>Top Flange Width (B1)</label><div class="field-row"><input type="number" id="ms_z_b1" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Bottom Flange Width (B2)</label><div class="field-row"><input type="number" id="ms_z_b2" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Web Height (H)</label><div class="field-row"><input type="number" id="ms_z_h" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Thickness (t)</label><div class="field-row"><input type="number" id="ms_z_t" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_z_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('zee')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_zee"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_angle">
+      <div class="card-header"><h2>Angle Section — L</h2><span class="subtitle">EQUAL / UNEQUAL ANGLE</span></div>
+      <div class="card-body">
+        <div class="fields-grid">
+          <div class="field"><label>Vertical Leg (A)</label><div class="field-row"><input type="number" id="ms_ang_a" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Horizontal Leg (B)</label><div class="field-row"><input type="number" id="ms_ang_b" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Thickness (t)</label><div class="field-row"><input type="number" id="ms_ang_t" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_ang_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('angle')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_angle"></div>
+      </div>
+    </div>
+
+    <div class="calc-card ms-hidden" id="ms_sec_channel">
+      <div class="card-header"><h2>Channel Section — C</h2><span class="subtitle">STRUCTURAL CHANNEL / ISMC</span></div>
+      <div class="card-body">
+        <div class="info-note">Web = vertical plate. Flanges = top &amp; bottom horizontal plates.</div>
+        <div class="fields-grid">
+          <div class="field"><label>Overall Height (H)</label><div class="field-row"><input type="number" id="ms_ch_h" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Flange Width (B)</label><div class="field-row"><input type="number" id="ms_ch_b" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Web Thickness (tw)</label><div class="field-row"><input type="number" id="ms_ch_tw" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Flange Thickness (tf)</label><div class="field-row"><input type="number" id="ms_ch_tf" placeholder="0" min="0"><span class="unit">mm</span></div></div>
+          <div class="field"><label>Length</label><div class="field-row"><input type="number" id="ms_ch_l" placeholder="1000" min="0" value="1000"><span class="unit">mm</span></div></div>
+        </div>
+        <button class="calc-btn" onclick="msCalc('channel')">CALCULATE WEIGHT</button>
+        <div class="result-box" id="ms_res_channel"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div><!-- end cal-ms -->
+
+
+<!-- ██ ALUMINIUM CALCULATOR ██ -->
+<div class="cal-wrapper" id="cal-al">
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" rx="6" fill="rgba(255,255,255,0.1)"/><rect x="8" y="8" width="20" height="4" fill="#90caf9"/><rect x="16" y="12" width="4" height="16" fill="#90caf9"/><circle cx="28" cy="28" r="5" fill="none" stroke="#90caf9" stroke-width="2"/></svg>
+  <h1>Aluminium Weight Calculator<span>CPWD · IS 1948 / IS 733 · All Architectural &amp; Structural Sections</span></h1>
+  <div class="al-header-badges"><span class="al-badge">ρ = 2700 kg/m³</span><span class="al-badge">ALLOY 6063-T5</span><span class="al-badge">IS 733 · IS 1948</span></div>
+</header>
+
+<div class="al-layout">
+  <nav class="al-sidebar">
+    <div class="al-sb-group">Structural Sections</div>
+    <button class="al-sec-btn active" data-alsec="flat" onclick="alShow('flat')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="2" y="10" width="24" height="8" fill="#90caf9" opacity=".8"/></svg></span>Flat Bar</button>
+    <button class="al-sec-btn" data-alsec="angle" onclick="alShow('angle')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="3" y="3" width="6" height="22" fill="#90caf9" opacity=".8"/><rect x="9" y="19" width="16" height="6" fill="#90caf9" opacity=".8"/></svg></span>Angle Section (L)</button>
+    <button class="al-sec-btn" data-alsec="tee" onclick="alShow('tee')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="2" y="3" width="24" height="6" fill="#90caf9" opacity=".8"/><rect x="11" y="9" width="6" height="16" fill="#90caf9" opacity=".8"/></svg></span>Tee Section (T)</button>
+    <button class="al-sec-btn" data-alsec="zee" onclick="alShow('zee')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="12" y="3" width="13" height="5" fill="#90caf9" opacity=".8"/><rect x="8" y="12" width="12" height="4" fill="#90caf9" opacity=".8"/><rect x="3" y="20" width="13" height="5" fill="#90caf9" opacity=".8"/></svg></span>Z Section (Purlin)</button>
+    <button class="al-sec-btn" data-alsec="channel" onclick="alShow('channel')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="3" y="3" width="6" height="22" fill="#90caf9" opacity=".8"/><rect x="9" y="3" width="16" height="6" fill="#90caf9" opacity=".8"/><rect x="9" y="19" width="16" height="6" fill="#90caf9" opacity=".8"/></svg></span>Channel (C)</button>
+    <button class="al-sec-btn" data-alsec="round_solid" onclick="alShow('round_solid')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><circle cx="14" cy="14" r="11" fill="#90caf9" opacity=".8"/></svg></span>Round Bar (Solid)</button>
+    <button class="al-sec-btn" data-alsec="square_solid" onclick="alShow('square_solid')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="3" y="3" width="22" height="22" fill="#90caf9" opacity=".8"/></svg></span>Square Bar (Solid)</button>
+    <div class="al-sb-group">Hollow Sections (Tubes)</div>
+    <button class="al-sec-btn" data-alsec="round_hollow" onclick="alShow('round_hollow')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><circle cx="14" cy="14" r="11" fill="none" stroke="#90caf9" stroke-width="2.5" opacity=".8"/><circle cx="14" cy="14" r="6" fill="none" stroke="#90caf9" stroke-width="1.5" opacity=".5"/></svg></span>Round Hollow (CHS)</button>
+    <button class="al-sec-btn" data-alsec="square_hollow" onclick="alShow('square_hollow')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="2" y="2" width="24" height="24" fill="none" stroke="#90caf9" stroke-width="2.5" opacity=".8"/><rect x="8" y="8" width="12" height="12" fill="none" stroke="#90caf9" stroke-width="1.5" opacity=".5"/></svg></span>Square Hollow (SHS)</button>
+    <button class="al-sec-btn" data-alsec="rect_hollow" onclick="alShow('rect_hollow')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="1" y="6" width="26" height="16" fill="none" stroke="#90caf9" stroke-width="2.5" opacity=".8"/><rect x="5" y="10" width="18" height="8" fill="none" stroke="#90caf9" stroke-width="1.5" opacity=".5"/></svg></span>Rectangular Hollow (RHS)</button>
+    <div class="al-sb-group">CPWD Door &amp; Window Profiles</div>
+    <button class="al-sec-btn" data-alsec="casement" onclick="alShow('casement')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="2" y="2" width="24" height="24" fill="none" stroke="#90caf9" stroke-width="2.5" opacity=".8"/><rect x="7" y="7" width="5" height="14" fill="#90caf9" opacity=".5"/></svg></span>Casement Window Frame</button>
+    <button class="al-sec-btn" data-alsec="sliding" onclick="alShow('sliding')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="1" y="6" width="26" height="16" fill="none" stroke="#90caf9" stroke-width="2.5" opacity=".8"/><line x1="14" y1="6" x2="14" y2="22" stroke="#90caf9" stroke-width="2" opacity=".7"/></svg></span>Sliding Window Frame</button>
+    <button class="al-sec-btn" data-alsec="glazing" onclick="alShow('glazing')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="3" y="8" width="22" height="4" fill="#90caf9" opacity=".8"/><rect x="3" y="16" width="22" height="4" fill="#90caf9" opacity=".5"/></svg></span>Glazing Bead / Stop</button>
+    <button class="al-sec-btn" data-alsec="louvre" onclick="alShow('louvre')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="2" y="5" width="24" height="4" fill="#90caf9" opacity=".8"/><rect x="2" y="12" width="24" height="4" fill="#90caf9" opacity=".6"/><rect x="2" y="19" width="24" height="4" fill="#90caf9" opacity=".4"/></svg></span>Louvre / Jalousie Blade</button>
+    <button class="al-sec-btn" data-alsec="curtain" onclick="alShow('curtain')"><span class="sec-icon"><svg viewBox="0 0 28 28" width="20" height="20"><rect x="2" y="2" width="4" height="24" fill="#90caf9" opacity=".8"/><rect x="22" y="2" width="4" height="24" fill="#90caf9" opacity=".8"/><rect x="6" y="13" width="16" height="3" fill="#90caf9" opacity=".5"/></svg></span>Curtain Wall Mullion</button>
+  </nav>
+
+  <div class="al-main">
+
+    <div class="al-calc-card" id="al_sec_flat">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="4" y="14" width="36" height="16" fill="none" stroke="white" stroke-width="2"/><rect x="4" y="14" width="36" height="16" fill="rgba(255,255,255,.15)"/></svg></div><div><h2>Flat Bar</h2><div class="subtitle">IS 733 · SOLID RECTANGULAR FLAT SECTION</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">Used as lintels, cills, stiffeners, cover plates in CPWD aluminium door/window works (IS 733).</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Width (W)</label><div class="al-input-row"><input type="number" id="al_fb_w" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Thickness (T)</label><div class="al-input-row"><input type="number" id="al_fb_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_fb_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('flat')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_flat"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_angle">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="8" y="8" width="8" height="28" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="16" y="29" width="20" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Angle Section (L)</h2><div class="subtitle">IS 733 · EQUAL / UNEQUAL ANGLE</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">Used as corner reinforcements, door/window frames, partition stiffeners. Equal angle: A=B.</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Vertical Leg (A)</label><div class="al-input-row"><input type="number" id="al_ang_a" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Horizontal Leg (B)</label><div class="al-input-row"><input type="number" id="al_ang_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Thickness (t)</label><div class="al-input-row"><input type="number" id="al_ang_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_ang_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('angle')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_angle"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_tee">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="5" y="8" width="34" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="18" y="15" width="8" height="22" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Tee Section (T)</h2><div class="subtitle">IS 733 · STRUCTURAL TEE / MUNTIN BAR</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">Used as glazing bar / muntin bar in aluminium windows (IS 1948). Divides window panes.</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Flange Width (B)</label><div class="al-input-row"><input type="number" id="al_tee_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Flange Thickness (tf)</label><div class="al-input-row"><input type="number" id="al_tee_tf" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Web Height (H)</label><div class="al-input-row"><input type="number" id="al_tee_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Web Thickness (tw)</label><div class="al-input-row"><input type="number" id="al_tee_tw" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_tee_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('tee')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_tee"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_zee">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="18" y="5" width="20" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="8" y="18" width="20" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="5" y="31" width="20" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Z Section / Purlin</h2><div class="subtitle">IS 733 · GLAZING BEAD / ROOFING PURLIN</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">Z-purlins used in roof cladding, wall framing, curtain walling in CPWD works.</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Top Flange (B1)</label><div class="al-input-row"><input type="number" id="al_z_b1" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Bottom Flange (B2)</label><div class="al-input-row"><input type="number" id="al_z_b2" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Web Height (H)</label><div class="al-input-row"><input type="number" id="al_z_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Thickness (t)</label><div class="al-input-row"><input type="number" id="al_z_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_z_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('zee')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_zee"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_channel">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="6" y="6" width="7" height="32" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="13" y="6" width="24" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="13" y="31" width="24" height="7" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Channel Section (C)</h2><div class="subtitle">IS 733 · STRUCTURAL CHANNEL / SILL SECTION</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">Used as sill/head channels, track sections in CPWD aluminium door &amp; window frames (IS 1948 / IS 1949).</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Overall Height (H)</label><div class="al-input-row"><input type="number" id="al_ch_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Flange Width (B)</label><div class="al-input-row"><input type="number" id="al_ch_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Web Thickness (tw)</label><div class="al-input-row"><input type="number" id="al_ch_tw" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Flange Thickness (tf)</label><div class="al-input-row"><input type="number" id="al_ch_tf" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_ch_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('channel')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_channel"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_round_solid">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><circle cx="22" cy="22" r="16" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/></svg></div><div><h2>Round Bar (Solid)</h2><div class="subtitle">IS 733 · SOLID CIRCULAR ROD</div></div></div>
+      <div class="al-card-body">
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Diameter (D)</label><div class="al-input-row"><input type="number" id="al_rs_d" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_rs_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('round_solid')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_round_solid"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_square_solid">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="6" y="6" width="32" height="32" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/></svg></div><div><h2>Square Bar (Solid)</h2><div class="subtitle">IS 733 · SOLID SQUARE SECTION</div></div></div>
+      <div class="al-card-body">
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Side (a)</label><div class="al-input-row"><input type="number" id="al_sq_a" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_sq_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('square_solid')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_square_solid"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_round_hollow">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><circle cx="22" cy="22" r="16" fill="none" stroke="white" stroke-width="3"/><circle cx="22" cy="22" r="8" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="3,2"/></svg></div><div><h2>Round Hollow (CHS / Pipe)</h2><div class="subtitle">IS 1285 · CIRCULAR HOLLOW SECTION</div></div></div>
+      <div class="al-card-body">
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Outer Diameter (OD)</label><div class="al-input-row"><input type="number" id="al_rh_od" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Wall Thickness (t)</label><div class="al-input-row"><input type="number" id="al_rh_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_rh_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('round_hollow')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_round_hollow"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_square_hollow">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="4" y="4" width="36" height="36" fill="none" stroke="white" stroke-width="3"/><rect x="13" y="13" width="18" height="18" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="3,2"/></svg></div><div><h2>Square Hollow Section (SHS)</h2><div class="subtitle">IS 1285 · HOLLOW SQUARE TUBE</div></div></div>
+      <div class="al-card-body">
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Outer Side (A)</label><div class="al-input-row"><input type="number" id="al_sh_a" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Wall Thickness (t)</label><div class="al-input-row"><input type="number" id="al_sh_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_sh_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('square_hollow')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_square_hollow"></div>
+      </div>
+    </div>
+
+    <div class="al-calc-card al-hidden" id="al_sec_rect_hollow">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="2" y="8" width="40" height="28" fill="none" stroke="white" stroke-width="3"/><rect x="9" y="15" width="26" height="14" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="3,2"/></svg></div><div><h2>Rectangular Hollow Section (RHS)</h2><div class="subtitle">IS 1285 · HOLLOW RECTANGULAR TUBE</div></div></div>
+      <div class="al-card-body">
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Width (B)</label><div class="al-input-row"><input type="number" id="al_rhs_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Height (H)</label><div class="al-input-row"><input type="number" id="al_rhs_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Wall Thickness (t)</label><div class="al-input-row"><input type="number" id="al_rhs_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_rhs_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('rhs')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_rhs"></div>
+      </div>
+    </div>
+
+    <!-- Casement Window -->
+    <div class="al-calc-card al-hidden" id="al_sec_casement">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="4" y="4" width="36" height="36" fill="none" stroke="white" stroke-width="2"/><rect x="10" y="4" width="7" height="36" fill="rgba(255,255,255,.2)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Casement Window Frame</h2><div class="subtitle">IS 1948 · ALUMINIUM CASEMENT / DOOR FRAME PROFILE</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">CPWD IS 1948 — Hollow frame profile. Click USE to auto-fill common profiles.</div>
+        <div class="al-tbl-wrap"><table class="al-profile-table"><thead><tr><th>Profile Type</th><th>B(mm)</th><th>H(mm)</th><th>t(mm)</th><th></th></tr></thead><tbody>
+          <tr><td>Frame Light</td><td>38</td><td>25</td><td>2.0</td><td><button class="al-use-btn" onclick="alFill('cas',38,25,2.0)">USE</button></td></tr>
+          <tr><td>Frame Medium</td><td>45</td><td>30</td><td>2.5</td><td><button class="al-use-btn" onclick="alFill('cas',45,30,2.5)">USE</button></td></tr>
+          <tr><td>Frame Heavy</td><td>50</td><td>38</td><td>3.0</td><td><button class="al-use-btn" onclick="alFill('cas',50,38,3.0)">USE</button></td></tr>
+          <tr><td>Sash Light</td><td>32</td><td>22</td><td>2.0</td><td><button class="al-use-btn" onclick="alFill('cas',32,22,2.0)">USE</button></td></tr>
+          <tr><td>Door Frame</td><td>64</td><td>45</td><td>3.0</td><td><button class="al-use-btn" onclick="alFill('cas',64,45,3.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="al-or-divider">OR ENTER CUSTOM</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Section Width (B)</label><div class="al-input-row"><input type="number" id="al_cas_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Section Height (H)</label><div class="al-input-row"><input type="number" id="al_cas_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Wall Thickness (t)</label><div class="al-input-row"><input type="number" id="al_cas_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_cas_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('casement')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_casement"></div>
+      </div>
+    </div>
+
+    <!-- Sliding Window -->
+    <div class="al-calc-card al-hidden" id="al_sec_sliding">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="2" y="8" width="40" height="28" fill="none" stroke="white" stroke-width="2.5"/><line x1="22" y1="8" x2="22" y2="36" stroke="white" stroke-width="2"/></svg></div><div><h2>Sliding Window Frame</h2><div class="subtitle">IS 1949 · ALUMINIUM SLIDING WINDOW TRACK / FRAME</div></div></div>
+      <div class="al-card-body">
+        <div class="al-tbl-wrap"><table class="al-profile-table"><thead><tr><th>Profile</th><th>B(mm)</th><th>H(mm)</th><th>t(mm)</th><th></th></tr></thead><tbody>
+          <tr><td>Outer Frame 2-track</td><td>64</td><td>32</td><td>2.0</td><td><button class="al-use-btn" onclick="alFill('sl',64,32,2.0)">USE</button></td></tr>
+          <tr><td>Outer Frame 3-track</td><td>90</td><td>32</td><td>2.0</td><td><button class="al-use-btn" onclick="alFill('sl',90,32,2.0)">USE</button></td></tr>
+          <tr><td>Shutter / Sash</td><td>40</td><td>25</td><td>2.0</td><td><button class="al-use-btn" onclick="alFill('sl',40,25,2.0)">USE</button></td></tr>
+          <tr><td>Interlock Section</td><td>22</td><td>25</td><td>1.8</td><td><button class="al-use-btn" onclick="alFill('sl',22,25,1.8)">USE</button></td></tr>
+          <tr><td>Fixed Light Frame</td><td>50</td><td>25</td><td>2.0</td><td><button class="al-use-btn" onclick="alFill('sl',50,25,2.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="al-or-divider">OR ENTER CUSTOM</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Section Width (B)</label><div class="al-input-row"><input type="number" id="al_sl_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Section Height (H)</label><div class="al-input-row"><input type="number" id="al_sl_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Wall Thickness (t)</label><div class="al-input-row"><input type="number" id="al_sl_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_sl_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('sliding')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_sliding"></div>
+      </div>
+    </div>
+
+    <!-- Glazing Bead -->
+    <div class="al-calc-card al-hidden" id="al_sec_glazing">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="4" y="16" width="36" height="8" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><rect x="4" y="24" width="36" height="8" fill="rgba(255,255,255,.1)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Glazing Bead / Stop</h2><div class="subtitle">CPWD · GLASS STOP / BEADING SECTION</div></div></div>
+      <div class="al-card-body">
+        <div class="al-info-note">Glazing beads hold glass panes in aluminium frames. Calculated as angle profile.</div>
+        <div class="al-tbl-wrap"><table class="al-profile-table"><thead><tr><th>Type</th><th>W(mm)</th><th>Leg(mm)</th><th>t(mm)</th><th></th></tr></thead><tbody>
+          <tr><td>Bead 6mm glass</td><td>16</td><td>10</td><td>1.6</td><td><button class="al-use-btn" onclick="alFillBead(16,10,1.6)">USE</button></td></tr>
+          <tr><td>Bead 10mm glass</td><td>20</td><td>12</td><td>1.6</td><td><button class="al-use-btn" onclick="alFillBead(20,12,1.6)">USE</button></td></tr>
+          <tr><td>Bead 12mm glass</td><td>22</td><td>14</td><td>2.0</td><td><button class="al-use-btn" onclick="alFillBead(22,14,2.0)">USE</button></td></tr>
+          <tr><td>Heavy Bead DGU</td><td>28</td><td>16</td><td>2.0</td><td><button class="al-use-btn" onclick="alFillBead(28,16,2.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="al-or-divider">OR ENTER CUSTOM</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Flange / Face (A)</label><div class="al-input-row"><input type="number" id="al_bead_a" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Leg / Depth (B)</label><div class="al-input-row"><input type="number" id="al_bead_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Thickness (t)</label><div class="al-input-row"><input type="number" id="al_bead_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_bead_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('glazing')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_glazing"></div>
+      </div>
+    </div>
+
+    <!-- Louvre -->
+    <div class="al-calc-card al-hidden" id="al_sec_louvre">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="4" y="8" width="36" height="6" fill="rgba(255,255,255,.2)" stroke="white" stroke-width="1.5"/><rect x="4" y="18" width="36" height="6" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="1.5"/><rect x="4" y="28" width="36" height="6" fill="rgba(255,255,255,.1)" stroke="white" stroke-width="1.5"/></svg></div><div><h2>Louvre / Jalousie Blade</h2><div class="subtitle">CPWD · ALUMINIUM LOUVRE / VENTILATOR SLAT</div></div></div>
+      <div class="al-card-body">
+        <div class="al-tbl-wrap"><table class="al-profile-table"><thead><tr><th>Blade Type</th><th>Width mm</th><th>Thickness mm</th><th></th></tr></thead><tbody>
+          <tr><td>Light Louvre</td><td>100</td><td>2.0</td><td><button class="al-use-btn" onclick="alFillLV(100,2.0)">USE</button></td></tr>
+          <tr><td>Standard Louvre</td><td>150</td><td>2.5</td><td><button class="al-use-btn" onclick="alFillLV(150,2.5)">USE</button></td></tr>
+          <tr><td>Heavy Louvre</td><td>200</td><td>3.0</td><td><button class="al-use-btn" onclick="alFillLV(200,3.0)">USE</button></td></tr>
+          <tr><td>Jalousie Blade</td><td>75</td><td>1.6</td><td><button class="al-use-btn" onclick="alFillLV(75,1.6)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="al-or-divider">OR ENTER CUSTOM</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Blade Width (W)</label><div class="al-input-row"><input type="number" id="al_lv_w" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Thickness (t)</label><div class="al-input-row"><input type="number" id="al_lv_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_lv_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('louvre')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_louvre"></div>
+      </div>
+    </div>
+
+    <!-- Curtain Wall Mullion -->
+    <div class="al-calc-card al-hidden" id="al_sec_curtain">
+      <div class="al-card-header"><div class="al-card-header-icon"><svg viewBox="0 0 44 44" width="28" height="28"><rect x="4" y="4" width="8" height="36" fill="rgba(255,255,255,.2)" stroke="white" stroke-width="1.5"/><rect x="32" y="4" width="8" height="36" fill="rgba(255,255,255,.2)" stroke="white" stroke-width="1.5"/><line x1="4" y1="22" x2="44" y2="22" stroke="white" stroke-width="2" stroke-dasharray="3,2"/></svg></div><div><h2>Curtain Wall Mullion / Transom</h2><div class="subtitle">CPWD · STRUCTURAL GLAZING / CW SYSTEM PROFILE</div></div></div>
+      <div class="al-card-body">
+        <div class="al-tbl-wrap"><table class="al-profile-table"><thead><tr><th>Profile</th><th>B mm</th><th>H mm</th><th>t mm</th><th></th></tr></thead><tbody>
+          <tr><td>Mullion 50 Series</td><td>50</td><td>120</td><td>2.5</td><td><button class="al-use-btn" onclick="alFill('cw',50,120,2.5)">USE</button></td></tr>
+          <tr><td>Mullion 65 Series</td><td>65</td><td>150</td><td>3.0</td><td><button class="al-use-btn" onclick="alFill('cw',65,150,3.0)">USE</button></td></tr>
+          <tr><td>Transom 50 Series</td><td>50</td><td>80</td><td>2.5</td><td><button class="al-use-btn" onclick="alFill('cw',50,80,2.5)">USE</button></td></tr>
+          <tr><td>Transom 65 Series</td><td>65</td><td>100</td><td>3.0</td><td><button class="al-use-btn" onclick="alFill('cw',65,100,3.0)">USE</button></td></tr>
+          <tr><td>Structural Glazing</td><td>80</td><td>200</td><td>4.0</td><td><button class="al-use-btn" onclick="alFill('cw',80,200,4.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="al-or-divider">OR ENTER CUSTOM</div>
+        <div class="al-fields-grid">
+          <div class="al-field"><label>Profile Width (B)</label><div class="al-input-row"><input type="number" id="al_cw_b" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Profile Depth (H)</label><div class="al-input-row"><input type="number" id="al_cw_h" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Wall Thickness (t)</label><div class="al-input-row"><input type="number" id="al_cw_t" placeholder="0" min="0"><span class="al-unit">mm</span></div></div>
+          <div class="al-field"><label>Length</label><div class="al-input-row"><input type="number" id="al_cw_l" placeholder="1000" value="1000" min="0"><span class="al-unit">mm</span></div></div>
+        </div>
+        <button class="al-calc-btn" onclick="alCalc('curtain')">⚡ CALCULATE WEIGHT</button>
+        <div class="al-result-box" id="al_res_curtain"></div>
+      </div>
+    </div>
+
+  </div><!-- al-main -->
+</div><!-- al-layout -->
+</div><!-- cal-al -->
+
+
+<!-- ██ STAINLESS STEEL CALCULATOR ██ -->
+<div class="cal-wrapper" id="cal-ss">
+
+<div class="ss-header">
+  <svg class="ss-logo" viewBox="0 0 38 38"><rect width="38" height="38" rx="6" fill="rgba(126,184,247,.07)" stroke="rgba(126,184,247,.2)" stroke-width="1"/><circle cx="19" cy="19" r="13" fill="none" stroke="#7eb8f7" stroke-width="1.5" stroke-dasharray="4 2"/><circle cx="19" cy="19" r="6" fill="none" stroke="#7eb8f7" stroke-width="2"/><rect x="17.5" y="4" width="3" height="10" rx="1" fill="#7eb8f7" opacity=".5"/><rect x="17.5" y="24" width="3" height="10" rx="1" fill="#7eb8f7" opacity=".5"/><rect x="4" y="17.5" width="10" height="3" rx="1" fill="#7eb8f7" opacity=".5"/><rect x="24" y="17.5" width="10" height="3" rx="1" fill="#7eb8f7" opacity=".5"/></svg>
+  <div class="ss-htitle">Stainless Steel Weight Calculator<small>CPWD · IS 6911 / IS 1554 / IS 4923 / IS 6527 — ALL SECTIONS</small></div>
+  <div class="ss-hbadges"><span class="ss-hbadge">Grade 304 / 316L</span><span class="ss-hbadge">IS 6911</span><span class="ss-hbadge">CPWD DSR 2021</span></div>
+</div>
+
+<div class="ss-grade-bar">
+  <span class="ss-gl">Grade ▸</span>
+  <button class="ss-gb active" onclick="ssSetGrade(this,7930)">304 / 304L — 7930</button>
+  <button class="ss-gb" onclick="ssSetGrade(this,7980)">316 / 316L — 7980</button>
+  <button class="ss-gb" onclick="ssSetGrade(this,7920)">202 — 7920</button>
+  <button class="ss-gb" onclick="ssSetGrade(this,7750)">410 / 420 — 7750</button>
+  <button class="ss-gb" onclick="ssSetGrade(this,7700)">430 — 7700</button>
+  <span class="ss-dens" id="ss_dens_disp">ρ = 7930 kg/m³</span>
+</div>
+
+<div class="ss-layout">
+  <nav class="ss-sidebar">
+    <div class="ss-sbg">Flat / Sheet</div>
+    <button class="ss-sbb active" data-sssec="flat" onclick="ssShow('flat')"><span class="ss-si">━</span>Flat Bar</button>
+    <button class="ss-sbb" data-sssec="sheet" onclick="ssShow('sheet')"><span class="ss-si">▬</span>Sheet / Plate</button>
+    <button class="ss-sbb" data-sssec="expjoint" onclick="ssShow('expjoint')"><span class="ss-si">↔</span>Expansion Joint Plate</button>
+    <button class="ss-sbb" data-sssec="stiffener" onclick="ssShow('stiffener')"><span class="ss-si">⊕</span>Stiffener / Gusset Plate</button>
+    <div class="ss-sbg">Structural Bars</div>
+    <button class="ss-sbb" data-sssec="round_solid" onclick="ssShow('round_solid')"><span class="ss-si">⬤</span>Round Bar (Solid)</button>
+    <button class="ss-sbb" data-sssec="sq_solid" onclick="ssShow('sq_solid')"><span class="ss-si">■</span>Square Bar (Solid)</button>
+    <button class="ss-sbb" data-sssec="angle" onclick="ssShow('angle')"><span class="ss-si">⌐</span>Angle (L)</button>
+    <button class="ss-sbb" data-sssec="channel" onclick="ssShow('channel')"><span class="ss-si">⊏</span>Channel (C)</button>
+    <button class="ss-sbb" data-sssec="tee" onclick="ssShow('tee')"><span class="ss-si">⊤</span>Tee (T)</button>
+    <button class="ss-sbb" data-sssec="zee" onclick="ssShow('zee')"><span class="ss-si">Z</span>Z Section</button>
+    <div class="ss-sbg">Hollow Tubes</div>
+    <button class="ss-sbb" data-sssec="chs" onclick="ssShow('chs')"><span class="ss-si">◎</span>Round Pipe (CHS)</button>
+    <button class="ss-sbb" data-sssec="shs" onclick="ssShow('shs')"><span class="ss-si">□</span>Square Hollow (SHS)</button>
+    <button class="ss-sbb" data-sssec="rhs" onclick="ssShow('rhs')"><span class="ss-si">▭</span>Rectangular Hollow (RHS)</button>
+    <div class="ss-sbg">CPWD Railing &amp; Fixtures</div>
+    <button class="ss-sbb" data-sssec="handrail" onclick="ssShow('handrail')"><span class="ss-si">◎</span>Handrail Pipe</button>
+    <button class="ss-sbb" data-sssec="baluster" onclick="ssShow('baluster')"><span class="ss-si">|</span>Baluster / Post</button>
+    <button class="ss-sbb" data-sssec="wire" onclick="ssShow('wire')"><span class="ss-si">•</span>Wire / Tension Rod</button>
+    <button class="ss-sbb" data-sssec="wiremesh" onclick="ssShow('wiremesh')"><span class="ss-si">⊞</span>Wire Mesh / Jali</button>
+    <div class="ss-sbg">CPWD Door &amp; Kitchen</div>
+    <button class="ss-sbb" data-sssec="doorframe" onclick="ssShow('doorframe')"><span class="ss-si">🚪</span>SS Door Frame</button>
+    <button class="ss-sbb" data-sssec="louvre" onclick="ssShow('louvre')"><span class="ss-si">≡</span>Louvre Blade</button>
+    <button class="ss-sbb" data-sssec="sink" onclick="ssShow('sink')"><span class="ss-si">🪣</span>Sink / Fabricated Sheet</button>
+    <div class="ss-sbg">★ Advanced</div>
+    <button class="ss-sbb" data-sssec="railing_builder" onclick="ssShow('railing_builder')"><span class="ss-si">⊟</span>Railing System Builder</button>
+  </nav>
+
+  <div class="ss-main" id="ss-main-content">
+
+    <!-- FLAT BAR -->
+    <div class="ss-card" id="ss_sec_flat">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="5" y="15" width="34" height="14" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.8"/></svg></div><div><h2>Flat Bar</h2><div class="ss-sub">IS 6911 · FLAT ROLLED / COLD DRAWN FLAT</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-note"><strong>CPWD:</strong> Expansion joint cover plates, handrail base plates, kicker plates, cladding trim, SS furniture frames.</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Width (W)</label><div class="ss-ir"><input type="number" id="ss_fb_w" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Thickness (T)</label><div class="ss-ir"><input type="number" id="ss_fb_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_fb_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('flat')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_flat"></div>
+      </div>
+    </div>
+
+    <!-- SHEET / PLATE -->
+    <div class="ss-card ss-hidden" id="ss_sec_sheet">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="3" y="5" width="38" height="34" fill="rgba(126,184,247,.12)" stroke="#7eb8f7" stroke-width="1.8" rx="2"/></svg></div><div><h2>Sheet / Plate</h2><div class="ss-sub">IS 6911 · CR / HR SHEET</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-note"><strong>CPWD:</strong> Lab counter lining, kitchen platform, hospital furniture, wall cladding, false ceiling.</div>
+        <div class="ss-tw"><table><thead><tr><th>Grade</th><th>T(mm)</th><th>Size(mm)</th><th>Wt/Sheet(kg)</th><th></th></tr></thead><tbody>
+          <tr><td>304 CR 2B</td><td>1.0</td><td>1220×2440</td><td>23.32</td><td><button class="ss-ub" onclick="ssFillSheet(2440,1220,1.0,1)">USE</button></td></tr>
+          <tr><td>304 CR 2B</td><td>1.2</td><td>1220×2440</td><td>27.96</td><td><button class="ss-ub" onclick="ssFillSheet(2440,1220,1.2,1)">USE</button></td></tr>
+          <tr><td>304 CR 2B</td><td>1.6</td><td>1220×2440</td><td>37.28</td><td><button class="ss-ub" onclick="ssFillSheet(2440,1220,1.6,1)">USE</button></td></tr>
+          <tr><td>304 CR 2B</td><td>2.0</td><td>1220×2440</td><td>46.60</td><td><button class="ss-ub" onclick="ssFillSheet(2440,1220,2.0,1)">USE</button></td></tr>
+          <tr><td>304 HR</td><td>3.0</td><td>1500×3000</td><td>107.0</td><td><button class="ss-ub" onclick="ssFillSheet(3000,1500,3.0,1)">USE</button></td></tr>
+          <tr><td>316L HR Plate</td><td>6.0</td><td>1500×3000</td><td>215.5</td><td><button class="ss-ub" onclick="ssFillSheet(3000,1500,6.0,1)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Length (L)</label><div class="ss-ir"><input type="number" id="ss_sh_l" placeholder="2440" value="2440" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Width (W)</label><div class="ss-ir"><input type="number" id="ss_sh_w" placeholder="1220" value="1220" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Thickness (T)</label><div class="ss-ir"><input type="number" id="ss_sh_t" placeholder="1.2" value="1.2" min="0" step=".1"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>No. of Sheets</label><div class="ss-ir"><input type="number" id="ss_sh_n" placeholder="1" value="1" min="1"><span class="ss-u">nos</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('sheet')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_sheet"></div>
+      </div>
+    </div>
+
+    <!-- EXPANSION JOINT -->
+    <div class="ss-card ss-hidden" id="ss_sec_expjoint">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="3" y="17" width="17" height="10" fill="rgba(126,184,247,.2)" stroke="#7eb8f7" stroke-width="1.8"/><rect x="24" y="17" width="17" height="10" fill="rgba(126,184,247,.1)" stroke="#7eb8f7" stroke-width="1.8"/></svg></div><div><h2>Expansion Joint Plate</h2><div class="ss-sub">CPWD DSR · SS COVER PLATE FOR EXPANSION JOINT</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-note"><strong>CPWD DSR:</strong> SS (Grade 304) cover plate for expansion joints in floors and walls. Typically 300–600 mm wide, 3–6 mm thick.</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Cover Width (W)</label><div class="ss-ir"><input type="number" id="ss_ej_w" placeholder="300" value="300" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Plate Thickness (T)</label><div class="ss-ir"><input type="number" id="ss_ej_t" placeholder="3" value="3" min="0" step=".5"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length of Joint</label><div class="ss-ir"><input type="number" id="ss_ej_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('expjoint')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_expjoint"></div>
+      </div>
+    </div>
+
+    <!-- STIFFENER -->
+    <div class="ss-card ss-hidden" id="ss_sec_stiffener">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="3" y="3" width="38" height="7" fill="rgba(126,184,247,.2)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="3" y="34" width="38" height="7" fill="rgba(126,184,247,.2)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="18" y="10" width="8" height="24" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/></svg></div><div><h2>Stiffener / Gusset Plate</h2><div class="ss-sub">CPWD · STIFFENER / GUSSET / BASE PLATE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-note"><strong>CPWD:</strong> Stiffener plates at connections, base plates for railing posts, gusset plates at bracket joints.</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Plate Length (L)</label><div class="ss-ir"><input type="number" id="ss_st_l" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Plate Width (W)</label><div class="ss-ir"><input type="number" id="ss_st_w" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Plate Thickness (T)</label><div class="ss-ir"><input type="number" id="ss_st_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>No. of Plates</label><div class="ss-ir"><input type="number" id="ss_st_n" placeholder="1" value="1" min="1"><span class="ss-u">nos</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('stiffener')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_stiffener"></div>
+      </div>
+    </div>
+
+    <!-- ROUND SOLID -->
+    <div class="ss-card ss-hidden" id="ss_sec_round_solid">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><circle cx="22" cy="22" r="16" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="2"/></svg></div><div><h2>Round Bar (Solid)</h2><div class="ss-sub">IS 6911 / IS 2073 · SOLID CIRCULAR ROD</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Dia(mm)</th><th>Unit Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>6</td><td>0.222</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',6)">USE</button></td></tr>
+          <tr><td>8</td><td>0.395</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',8)">USE</button></td></tr>
+          <tr><td>10</td><td>0.617</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',10)">USE</button></td></tr>
+          <tr><td>12</td><td>0.888</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',12)">USE</button></td></tr>
+          <tr><td>16</td><td>1.579</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',16)">USE</button></td></tr>
+          <tr><td>20</td><td>2.468</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',20)">USE</button></td></tr>
+          <tr><td>25</td><td>3.856</td><td><button class="ss-ub" onclick="ssSet('ss_rs_d',25)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Diameter (D)</label><div class="ss-ir"><input type="number" id="ss_rs_d" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_rs_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('round_solid')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_round_solid"></div>
+      </div>
+    </div>
+
+    <!-- SQUARE SOLID -->
+    <div class="ss-card ss-hidden" id="ss_sec_sq_solid">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="6" y="6" width="32" height="32" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="2"/></svg></div><div><h2>Square Bar (Solid)</h2><div class="ss-sub">IS 6911 · SOLID SQUARE SECTION</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-fg">
+          <div class="ss-field"><label>Side (a)</label><div class="ss-ir"><input type="number" id="ss_sq_a" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_sq_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('sq_solid')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_sq_solid"></div>
+      </div>
+    </div>
+
+    <!-- ANGLE -->
+    <div class="ss-card ss-hidden" id="ss_sec_angle">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="7" y="7" width="8" height="30" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="15" y="29" width="22" height="8" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/></svg></div><div><h2>Angle Section (L)</h2><div class="ss-sub">IS 6911 / IS 1173 · EQUAL &amp; UNEQUAL ANGLE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Size A×B×t(mm)</th><th>Type</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>25×25×3</td><td>Equal</td><td>1.110</td><td><button class="ss-ub" onclick="ssSetAng(25,25,3)">USE</button></td></tr>
+          <tr><td>40×40×4</td><td>Equal</td><td>2.370</td><td><button class="ss-ub" onclick="ssSetAng(40,40,4)">USE</button></td></tr>
+          <tr><td>50×50×5</td><td>Equal</td><td>3.700</td><td><button class="ss-ub" onclick="ssSetAng(50,50,5)">USE</button></td></tr>
+          <tr><td>50×30×4</td><td>Unequal</td><td>2.450</td><td><button class="ss-ub" onclick="ssSetAng(50,30,4)">USE</button></td></tr>
+          <tr><td>65×50×5</td><td>Unequal</td><td>4.440</td><td><button class="ss-ub" onclick="ssSetAng(65,50,5)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Leg A (vert)</label><div class="ss-ir"><input type="number" id="ss_ang_a" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Leg B (horiz)</label><div class="ss-ir"><input type="number" id="ss_ang_b" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_ang_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_ang_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('angle')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_angle"></div>
+      </div>
+    </div>
+
+    <!-- CHANNEL -->
+    <div class="ss-card ss-hidden" id="ss_sec_channel">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="6" y="6" width="7" height="32" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="13" y="6" width="24" height="7" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="13" y="31" width="24" height="7" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/></svg></div><div><h2>Channel Section (C)</h2><div class="ss-sub">IS 6911 · STRUCTURAL CHANNEL</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-fg">
+          <div class="ss-field"><label>Overall Height (H)</label><div class="ss-ir"><input type="number" id="ss_ch_h" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Flange Width (B)</label><div class="ss-ir"><input type="number" id="ss_ch_b" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Web Thickness (tw)</label><div class="ss-ir"><input type="number" id="ss_ch_tw" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Flange Thickness (tf)</label><div class="ss-ir"><input type="number" id="ss_ch_tf" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_ch_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('channel')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_channel"></div>
+      </div>
+    </div>
+
+    <!-- TEE -->
+    <div class="ss-card ss-hidden" id="ss_sec_tee">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="4" y="7" width="36" height="8" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="18" y="15" width="8" height="22" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/></svg></div><div><h2>Tee Section (T)</h2><div class="ss-sub">IS 6911 · STRUCTURAL TEE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-fg">
+          <div class="ss-field"><label>Flange Width (B)</label><div class="ss-ir"><input type="number" id="ss_tee_b" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Flange Thick. (tf)</label><div class="ss-ir"><input type="number" id="ss_tee_tf" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Web Height (H)</label><div class="ss-ir"><input type="number" id="ss_tee_h" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Web Thickness (tw)</label><div class="ss-ir"><input type="number" id="ss_tee_tw" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_tee_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('tee')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_tee"></div>
+      </div>
+    </div>
+
+    <!-- Z SECTION -->
+    <div class="ss-card ss-hidden" id="ss_sec_zee">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="18" y="5" width="20" height="7" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="12" y="18" width="20" height="7" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="6" y="31" width="20" height="7" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/></svg></div><div><h2>Z Section</h2><div class="ss-sub">IS 6911 · Z-SECTION / ROOFING PURLIN</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-fg">
+          <div class="ss-field"><label>Top Flange (B1)</label><div class="ss-ir"><input type="number" id="ss_z_b1" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Bottom Flange (B2)</label><div class="ss-ir"><input type="number" id="ss_z_b2" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Web Height (H)</label><div class="ss-ir"><input type="number" id="ss_z_h" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_z_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_z_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('zee')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_zee"></div>
+      </div>
+    </div>
+
+    <!-- CHS -->
+    <div class="ss-card ss-hidden" id="ss_sec_chs">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><circle cx="22" cy="22" r="16" fill="none" stroke="#7eb8f7" stroke-width="3"/><circle cx="22" cy="22" r="8" fill="none" stroke="#7eb8f7" stroke-width="1.5" opacity=".4"/></svg></div><div><h2>Round Pipe / CHS</h2><div class="ss-sub">IS 1554 / IS 4923 · CIRCULAR HOLLOW SECTION</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>OD(mm)</th><th>t(mm)</th><th>Application</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>25.4</td><td>1.6</td><td>Light railing</td><td>0.945</td><td><button class="ss-ub" onclick="ssSetPipe(25.4,1.6)">USE</button></td></tr>
+          <tr><td>38.1</td><td>2.0</td><td>Handrail/grab bar</td><td>1.780</td><td><button class="ss-ub" onclick="ssSetPipe(38.1,2.0)">USE</button></td></tr>
+          <tr><td>48.3</td><td>2.0</td><td>Main rail</td><td>2.300</td><td><button class="ss-ub" onclick="ssSetPipe(48.3,2.0)">USE</button></td></tr>
+          <tr><td>50.8</td><td>2.5</td><td>Top rail</td><td>3.015</td><td><button class="ss-ub" onclick="ssSetPipe(50.8,2.5)">USE</button></td></tr>
+          <tr><td>63.5</td><td>3.0</td><td>Post/column</td><td>4.465</td><td><button class="ss-ub" onclick="ssSetPipe(63.5,3.0)">USE</button></td></tr>
+          <tr><td>76.1</td><td>3.0</td><td>Gate post</td><td>5.396</td><td><button class="ss-ub" onclick="ssSetPipe(76.1,3.0)">USE</button></td></tr>
+          <tr><td>101.6</td><td>3.0</td><td>Heavy structural</td><td>7.260</td><td><button class="ss-ub" onclick="ssSetPipe(101.6,3.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Outer Dia (OD)</label><div class="ss-ir"><input type="number" id="ss_chs_od" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Wall Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_chs_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_chs_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('chs')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_chs"></div>
+      </div>
+    </div>
+
+    <!-- SHS -->
+    <div class="ss-card ss-hidden" id="ss_sec_shs">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="4" y="4" width="36" height="36" fill="none" stroke="#7eb8f7" stroke-width="3"/><rect x="13" y="13" width="18" height="18" fill="none" stroke="#7eb8f7" stroke-width="1.5" opacity=".4"/></svg></div><div><h2>Square Hollow Section (SHS)</h2><div class="ss-sub">IS 4923 · HOLLOW SQUARE TUBE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>A×A(mm)</th><th>t(mm)</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>25×25</td><td>2.0</td><td>1.430</td><td><button class="ss-ub" onclick="ssSetSHS(25,2.0)">USE</button></td></tr>
+          <tr><td>40×40</td><td>2.5</td><td>2.900</td><td><button class="ss-ub" onclick="ssSetSHS(40,2.5)">USE</button></td></tr>
+          <tr><td>50×50</td><td>2.5</td><td>3.636</td><td><button class="ss-ub" onclick="ssSetSHS(50,2.5)">USE</button></td></tr>
+          <tr><td>50×50</td><td>3.0</td><td>4.298</td><td><button class="ss-ub" onclick="ssSetSHS(50,3.0)">USE</button></td></tr>
+          <tr><td>75×75</td><td>3.0</td><td>6.590</td><td><button class="ss-ub" onclick="ssSetSHS(75,3.0)">USE</button></td></tr>
+          <tr><td>100×100</td><td>4.0</td><td>11.80</td><td><button class="ss-ub" onclick="ssSetSHS(100,4.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Outer Side (A)</label><div class="ss-ir"><input type="number" id="ss_shs_a" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Wall Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_shs_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_shs_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('shs')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_shs"></div>
+      </div>
+    </div>
+
+    <!-- RHS -->
+    <div class="ss-card ss-hidden" id="ss_sec_rhs">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="2" y="9" width="40" height="26" fill="none" stroke="#7eb8f7" stroke-width="3"/><rect x="8" y="15" width="28" height="14" fill="none" stroke="#7eb8f7" stroke-width="1.5" opacity=".4"/></svg></div><div><h2>Rectangular Hollow Section (RHS)</h2><div class="ss-sub">IS 4923 · HOLLOW RECTANGULAR TUBE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-fg">
+          <div class="ss-field"><label>Width (B)</label><div class="ss-ir"><input type="number" id="ss_rhs_b" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Height (H)</label><div class="ss-ir"><input type="number" id="ss_rhs_h" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Wall Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_rhs_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_rhs_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('rhs')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_rhs"></div>
+      </div>
+    </div>
+
+    <!-- HANDRAIL -->
+    <div class="ss-card ss-hidden" id="ss_sec_handrail">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><circle cx="22" cy="22" r="16" fill="none" stroke="#7eb8f7" stroke-width="4"/><circle cx="22" cy="22" r="5" fill="rgba(126,184,247,.2)"/></svg></div><div><h2>Handrail Pipe (CPWD Railing)</h2><div class="ss-sub">IS 1554 / CPWD DSR · SS RAILING MEMBERS</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Member</th><th>OD(mm)</th><th>t(mm)</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>Top Rail</td><td>50.8</td><td>2.0</td><td>2.420</td><td><button class="ss-ub" onclick="ssSetHR(50.8,2.0)">USE</button></td></tr>
+          <tr><td>Mid Rail</td><td>38.1</td><td>1.6</td><td>1.437</td><td><button class="ss-ub" onclick="ssSetHR(38.1,1.6)">USE</button></td></tr>
+          <tr><td>Baluster Pipe</td><td>25.4</td><td>1.6</td><td>0.945</td><td><button class="ss-ub" onclick="ssSetHR(25.4,1.6)">USE</button></td></tr>
+          <tr><td>Newel Post</td><td>63.5</td><td>3.0</td><td>4.465</td><td><button class="ss-ub" onclick="ssSetHR(63.5,3.0)">USE</button></td></tr>
+          <tr><td>Grab Bar</td><td>38.1</td><td>2.0</td><td>1.785</td><td><button class="ss-ub" onclick="ssSetHR(38.1,2.0)">USE</button></td></tr>
+          <tr><td>Towel Rail</td><td>25.4</td><td>1.2</td><td>0.715</td><td><button class="ss-ub" onclick="ssSetHR(25.4,1.2)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Outer Dia (OD)</label><div class="ss-ir"><input type="number" id="ss_hr_od" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Wall Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_hr_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_hr_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('handrail')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_handrail"></div>
+      </div>
+    </div>
+
+    <!-- BALUSTER -->
+    <div class="ss-card ss-hidden" id="ss_sec_baluster">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="15" y="3" width="14" height="38" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="2" rx="1"/></svg></div><div><h2>Baluster / Post</h2><div class="ss-sub">CPWD DSR · SS SQUARE PICKET / NEWEL POST</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Size</th><th>Type</th><th>t(mm)</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>12×12</td><td>Solid picket</td><td>—</td><td>1.142</td><td><button class="ss-ub" onclick="ssSetBal(12,0)">USE</button></td></tr>
+          <tr><td>16×16</td><td>Solid picket</td><td>—</td><td>2.031</td><td><button class="ss-ub" onclick="ssSetBal(16,0)">USE</button></td></tr>
+          <tr><td>25×25 SHS</td><td>Hollow</td><td>2.0</td><td>1.430</td><td><button class="ss-ub" onclick="ssSetBal(25,2.0)">USE</button></td></tr>
+          <tr><td>40×40 SHS</td><td>Hollow</td><td>2.5</td><td>2.900</td><td><button class="ss-ub" onclick="ssSetBal(40,2.5)">USE</button></td></tr>
+          <tr><td>50×50 SHS</td><td>Hollow</td><td>3.0</td><td>4.298</td><td><button class="ss-ub" onclick="ssSetBal(50,3.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM (t=0 for solid)</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Side (A)</label><div class="ss-ir"><input type="number" id="ss_bal_a" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Wall t (0=solid)</label><div class="ss-ir"><input type="number" id="ss_bal_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Height / Length</label><div class="ss-ir"><input type="number" id="ss_bal_l" placeholder="900" value="900" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('baluster')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_baluster"></div>
+      </div>
+    </div>
+
+    <!-- WIRE -->
+    <div class="ss-card ss-hidden" id="ss_sec_wire">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><circle cx="22" cy="22" r="6" fill="rgba(126,184,247,.4)" stroke="#7eb8f7" stroke-width="2"/><line x1="22" y1="5" x2="22" y2="16" stroke="#7eb8f7" stroke-width="2"/><line x1="22" y1="28" x2="22" y2="39" stroke="#7eb8f7" stroke-width="2"/></svg></div><div><h2>Wire / Tension Rod</h2><div class="ss-sub">IS 6527 · INFILL WIRE, TENSION ROD, CABLE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Dia(mm)</th><th>Type</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>3</td><td>Solid wire/rod</td><td>0.0556</td><td><button class="ss-ub" onclick="ssSet('ss_wr_d',3)">USE</button></td></tr>
+          <tr><td>5</td><td>Solid rod/infill</td><td>0.1545</td><td><button class="ss-ub" onclick="ssSet('ss_wr_d',5)">USE</button></td></tr>
+          <tr><td>6</td><td>Rod/wire rope</td><td>0.2224</td><td><button class="ss-ub" onclick="ssSet('ss_wr_d',6)">USE</button></td></tr>
+          <tr><td>8</td><td>Tension rod</td><td>0.3956</td><td><button class="ss-ub" onclick="ssSet('ss_wr_d',8)">USE</button></td></tr>
+          <tr><td>10</td><td>Tension rod</td><td>0.6178</td><td><button class="ss-ub" onclick="ssSet('ss_wr_d',10)">USE</button></td></tr>
+          <tr><td>12</td><td>Tension rod/bolt</td><td>0.8896</td><td><button class="ss-ub" onclick="ssSet('ss_wr_d',12)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Diameter (D)</label><div class="ss-ir"><input type="number" id="ss_wr_d" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_wr_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('wire')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_wire"></div>
+      </div>
+    </div>
+
+    <!-- WIRE MESH -->
+    <div class="ss-card ss-hidden" id="ss_sec_wiremesh">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><line x1="4" y1="15" x2="40" y2="15" stroke="#7eb8f7" stroke-width="2"/><line x1="4" y1="29" x2="40" y2="29" stroke="#7eb8f7" stroke-width="2"/><line x1="15" y1="4" x2="15" y2="40" stroke="#7eb8f7" stroke-width="2"/><line x1="29" y1="4" x2="29" y2="40" stroke="#7eb8f7" stroke-width="2"/></svg></div><div><h2>Wire Mesh / Jali</h2><div class="ss-sub">IS 1568 / CPWD · WOVEN / WELDED WIRE MESH</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Wire Ø(mm)</th><th>Pitch(mm)</th><th>Approx Wt(kg/m²)</th><th></th></tr></thead><tbody>
+          <tr><td>1.0</td><td>5.0</td><td>1.24</td><td><button class="ss-ub" onclick="ssSet2('ss_wm_d',1.0,'ss_wm_p',5.0)">USE</button></td></tr>
+          <tr><td>1.6</td><td>10</td><td>1.60</td><td><button class="ss-ub" onclick="ssSet2('ss_wm_d',1.6,'ss_wm_p',10)">USE</button></td></tr>
+          <tr><td>2.0</td><td>12</td><td>2.62</td><td><button class="ss-ub" onclick="ssSet2('ss_wm_d',2.0,'ss_wm_p',12)">USE</button></td></tr>
+          <tr><td>3.0</td><td>25</td><td>2.84</td><td><button class="ss-ub" onclick="ssSet2('ss_wm_d',3.0,'ss_wm_p',25)">USE</button></td></tr>
+          <tr><td>4.0</td><td>50</td><td>1.98</td><td><button class="ss-ub" onclick="ssSet2('ss_wm_d',4.0,'ss_wm_p',50)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Wire Dia (d)</label><div class="ss-ir"><input type="number" id="ss_wm_d" placeholder="0" min="0" step=".1"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Mesh Pitch (p)</label><div class="ss-ir"><input type="number" id="ss_wm_p" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Sheet Length (L)</label><div class="ss-ir"><input type="number" id="ss_wm_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Sheet Width (W)</label><div class="ss-ir"><input type="number" id="ss_wm_w" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('wiremesh')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_wiremesh"></div>
+      </div>
+    </div>
+
+    <!-- DOOR FRAME -->
+    <div class="ss-card ss-hidden" id="ss_sec_doorframe">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="4" y="4" width="36" height="36" fill="none" stroke="#7eb8f7" stroke-width="2"/><rect x="8" y="4" width="7" height="36" fill="rgba(126,184,247,.2)" stroke="#7eb8f7" stroke-width="1"/></svg></div><div><h2>SS Door Frame Profile</h2><div class="ss-sub">CPWD · HOLLOW / SOLID DOOR FRAME SECTION</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Frame Profile</th><th>B(mm)</th><th>H(mm)</th><th>t(mm)</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>Light Door Frame</td><td>38</td><td>25</td><td>1.5</td><td>0.745</td><td><button class="ss-ub" onclick="ssSetDF(38,25,1.5)">USE</button></td></tr>
+          <tr><td>Medium Door Frame</td><td>50</td><td>38</td><td>2.0</td><td>1.277</td><td><button class="ss-ub" onclick="ssSetDF(50,38,2.0)">USE</button></td></tr>
+          <tr><td>Heavy Door Frame</td><td>63</td><td>50</td><td>2.5</td><td>2.048</td><td><button class="ss-ub" onclick="ssSetDF(63,50,2.5)">USE</button></td></tr>
+          <tr><td>Hospital Grade</td><td>75</td><td>50</td><td>3.0</td><td>2.890</td><td><button class="ss-ub" onclick="ssSetDF(75,50,3.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Frame Width (B)</label><div class="ss-ir"><input type="number" id="ss_df_b" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Frame Height (H)</label><div class="ss-ir"><input type="number" id="ss_df_h" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Wall Thickness (t)</label><div class="ss-ir"><input type="number" id="ss_df_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Length</label><div class="ss-ir"><input type="number" id="ss_df_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('doorframe')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_doorframe"></div>
+      </div>
+    </div>
+
+    <!-- LOUVRE -->
+    <div class="ss-card ss-hidden" id="ss_sec_louvre">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="4" y="8" width="36" height="6" fill="rgba(126,184,247,.2)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="4" y="19" width="36" height="6" fill="rgba(126,184,247,.15)" stroke="#7eb8f7" stroke-width="1.5"/><rect x="4" y="30" width="36" height="6" fill="rgba(126,184,247,.1)" stroke="#7eb8f7" stroke-width="1.5"/></svg></div><div><h2>Louvre / Ventilator Blade</h2><div class="ss-sub">CPWD · SS LOUVRE / JALOUSIE BLADE</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-tw"><table><thead><tr><th>Blade Type</th><th>Width(mm)</th><th>T(mm)</th><th>Wt(kg/m)</th><th></th></tr></thead><tbody>
+          <tr><td>Light Louvre</td><td>75</td><td>1.2</td><td>0.712</td><td><button class="ss-ub" onclick="ssSet2('ss_lv_w',75,'ss_lv_t',1.2)">USE</button></td></tr>
+          <tr><td>Jalousie 100×1.6</td><td>100</td><td>1.6</td><td>1.269</td><td><button class="ss-ub" onclick="ssSet2('ss_lv_w',100,'ss_lv_t',1.6)">USE</button></td></tr>
+          <tr><td>Standard 150×2.0</td><td>150</td><td>2.0</td><td>2.379</td><td><button class="ss-ub" onclick="ssSet2('ss_lv_w',150,'ss_lv_t',2.0)">USE</button></td></tr>
+          <tr><td>Heavy 200×3.0</td><td>200</td><td>3.0</td><td>4.758</td><td><button class="ss-ub" onclick="ssSet2('ss_lv_w',200,'ss_lv_t',3.0)">USE</button></td></tr>
+        </tbody></table></div>
+        <div class="ss-div">OR ENTER CUSTOM</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Blade Width (W)</label><div class="ss-ir"><input type="number" id="ss_lv_w" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Thickness (T)</label><div class="ss-ir"><input type="number" id="ss_lv_t" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Blade Length</label><div class="ss-ir"><input type="number" id="ss_lv_l" placeholder="1000" value="1000" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>No. of Blades</label><div class="ss-ir"><input type="number" id="ss_lv_n" placeholder="1" value="1" min="1"><span class="ss-u">nos</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('louvre')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_louvre"></div>
+      </div>
+    </div>
+
+    <!-- SINK -->
+    <div class="ss-card ss-hidden" id="ss_sec_sink">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><rect x="3" y="3" width="38" height="38" rx="3" fill="none" stroke="#7eb8f7" stroke-width="2"/><rect x="9" y="9" width="26" height="26" rx="2" fill="none" stroke="#7eb8f7" stroke-width="1.5" opacity=".5"/></svg></div><div><h2>Sink / Fabricated Sheet Component</h2><div class="ss-sub">CPWD · KITCHEN SINK / COUNTER / HOSPITAL BED PANEL</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-note">Enter developed flat area dimensions. Standard sink sheet: 1.2 mm Grade 304 2B per CPWD spec.</div>
+        <div class="ss-fg">
+          <div class="ss-field"><label>Dev. Length (L)</label><div class="ss-ir"><input type="number" id="ss_sk_l" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Dev. Width (W)</label><div class="ss-ir"><input type="number" id="ss_sk_w" placeholder="0" min="0"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>Sheet T</label><div class="ss-ir"><input type="number" id="ss_sk_t" placeholder="1.2" value="1.2" min="0" step=".1"><span class="ss-u">mm</span></div></div>
+          <div class="ss-field"><label>No. of Pieces</label><div class="ss-ir"><input type="number" id="ss_sk_n" placeholder="1" value="1" min="1"><span class="ss-u">nos</span></div></div>
+        </div>
+        <button class="ss-btn" onclick="ssCalc('sink')">▶ CALCULATE WEIGHT</button>
+        <div class="ss-result" id="ss_res_sink"></div>
+      </div>
+    </div>
+
+    <!-- RAILING BUILDER -->
+    <div class="ss-card ss-hidden" id="ss_sec_railing_builder">
+      <div class="ss-ch"><div class="ss-chi"><svg viewBox="0 0 44 44" width="26"><line x1="3" y1="9" x2="41" y2="9" stroke="#7eb8f7" stroke-width="2.5"/><line x1="3" y1="35" x2="41" y2="35" stroke="#7eb8f7" stroke-width="2.5"/><line x1="9" y1="9" x2="9" y2="35" stroke="#7eb8f7" stroke-width="2"/><line x1="22" y1="9" x2="22" y2="35" stroke="#7eb8f7" stroke-width="2"/><line x1="35" y1="9" x2="35" y2="35" stroke="#7eb8f7" stroke-width="2"/></svg></div><div><h2>Railing System Builder</h2><div class="ss-sub">CPWD DSR · MULTI-MEMBER SS RAILING WEIGHT ESTIMATOR</div></div></div>
+      <div class="ss-cb">
+        <div class="ss-note"><strong>CPWD:</strong> Add each member type. Compute total SS railing system weight.</div>
+        <div style="overflow-x:auto">
+          <div style="min-width:520px">
+            <div style="display:grid;grid-template-columns:1.6fr 72px 64px 90px 84px 36px;gap:6px;margin-bottom:6px;padding:0 2px">
+              <div class="ss-rail-lbl">Member / Description</div>
+              <div class="ss-rail-lbl">OD/Side mm</div>
+              <div class="ss-rail-lbl">t mm</div>
+              <div class="ss-rail-lbl">Type</div>
+              <div class="ss-rail-lbl">Length mm</div>
+              <div></div>
+            </div>
+            <div id="ssRailRows"></div>
+          </div>
+        </div>
+        <button class="ss-add-row" onclick="ssAddRailRow()">+ Add Member Row</button>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="ss-btn" style="flex:1" onclick="ssCalcRailing()">▶ CALCULATE TOTAL WEIGHT</button>
+          <button class="ss-btn" style="flex:0 0 auto;width:auto;padding:11px 14px;opacity:.5" onclick="document.getElementById('ssRailRows').innerHTML='';ssRailCount=0;">✕</button>
+        </div>
+        <div class="ss-result" id="ss_res_railing"></div>
+      </div>
+    </div>
+
+  </div><!-- ss-main -->
+</div><!-- ss-layout -->
+</div><!-- cal-ss -->
+
+
+<!-- ══════════════════════════════════════════
+   BOTTOM MATERIAL SWITCHER
+══════════════════════════════════════════ -->
+<div id="mat-switcher">
+  <div class="switcher-pills">
+    <button class="sw-pill active" data-cal="ms" onclick="switchCal('ms')">
+      <span class="sw-ico">🔩</span>Mild Steel
+    </button>
+    <button class="sw-pill" data-cal="al" onclick="switchCal('al')">
+      <span class="sw-ico">🪨</span>Aluminium
+    </button>
+    <button class="sw-pill" data-cal="ss" onclick="switchCal('ss')">
+      <span class="sw-ico">✨</span>SS Steel
+    </button>
+  </div>
+</div>
+
+
+<script>
+/* ══════════════════════════════════════
+   MATERIAL SWITCHER
+══════════════════════════════════════ */
+function switchCal(cal) {
+  document.querySelectorAll('.cal-wrapper').forEach(w => w.classList.remove('active'));
+  document.querySelectorAll('.sw-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('cal-' + cal).classList.add('active');
+  document.querySelector(`.sw-pill[data-cal="${cal}"]`).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ══════════════════════════════════════
+   MS CALCULATOR
+══════════════════════════════════════ */
+const MS_RHO = 7850;
+
+function msShow(name) {
+  document.querySelectorAll('#cal-ms .calc-card').forEach(c => c.classList.add('ms-hidden'));
+  document.querySelectorAll('#cal-ms .section-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ms_sec_' + name).classList.remove('ms-hidden');
+  document.querySelector(`#cal-ms .section-btn[data-section="ms_${name}"]`).classList.add('active');
+}
+
+function msGV(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function msShowResult(id, area_mm2, length_mm, formula) {
+  const mass = (area_mm2 * length_mm / 1e9) * MS_RHO;
+  const unitWt = (area_mm2 / 1e6) * MS_RHO;
+  const el = document.getElementById(id);
+  el.innerHTML = `
+    <div class="result-label">Calculation Result</div>
+    <div class="result-grid">
+      <div class="result-item"><div class="r-label">Cross-Section Area</div><div class="r-value">${area_mm2.toFixed(2)}<span class="r-unit">mm²</span></div></div>
+      <div class="result-item"><div class="r-label">Unit Weight</div><div class="r-value">${unitWt.toFixed(3)}<span class="r-unit">kg/m</span></div></div>
+      <div class="result-item"><div class="r-label">Total Weight (${(length_mm/1000).toFixed(3)} m)</div><div class="r-value">${mass.toFixed(3)}<span class="r-unit">kg</span></div></div>
+      <div class="result-item"><div class="r-label">Total Weight</div><div class="r-value">${(mass/1000).toFixed(4)}<span class="r-unit">tonnes</span></div></div>
+    </div>
+    <div class="formula-note">Formula: ${formula}</div>`;
+  el.classList.add('show');
+}
+
+function msCalc(type) {
+  switch(type) {
+    case 'round_solid': {
+      const d=msGV('ms_rs_d'), l=msGV('ms_rs_l');
+      if(!d||!l) return alert('Enter valid values');
+      msShowResult('ms_res_round', Math.PI*d*d/4, l, `A = π·D²/4 = π·${d}²/4`); break;
+    }
+    case 'round_hollow': {
+      const od=msGV('ms_rh_od'), t=msGV('ms_rh_t'), l=msGV('ms_rh_l');
+      if(!od||!t||!l) return alert('Enter valid values');
+      if(t>=od/2) return alert('Wall thickness must be less than radius');
+      const id=od-2*t;
+      msShowResult('ms_res_round_hollow', Math.PI*(od*od-id*id)/4, l, `A = π/4·(OD²−ID²), ID=${id}mm`); break;
+    }
+    case 'square_solid': {
+      const a=msGV('ms_ss_a'), l=msGV('ms_ss_l');
+      if(!a||!l) return alert('Enter valid values');
+      msShowResult('ms_res_square', a*a, l, `A = a² = ${a}²`); break;
+    }
+    case 'square_hollow': {
+      const a=msGV('ms_sh_a'), t=msGV('ms_sh_t'), l=msGV('ms_sh_l');
+      if(!a||!t||!l) return alert('Enter valid values');
+      if(t>=a/2) return alert('Wall thickness must be less than half the side');
+      const i=a-2*t;
+      msShowResult('ms_res_square_hollow', a*a-i*i, l, `A = A²−(A−2t)² = ${a}²−${i}²`); break;
+    }
+    case 'rhs': {
+      const b=msGV('ms_rhs_b'), h=msGV('ms_rhs_h'), t=msGV('ms_rhs_t'), l=msGV('ms_rhs_l');
+      if(!b||!h||!t||!l) return alert('Enter valid values');
+      const ib=b-2*t, ih=h-2*t;
+      if(ib<=0||ih<=0) return alert('Wall thickness too large');
+      msShowResult('ms_res_rect_hollow', b*h-ib*ih, l, `A = B·H−(B−2t)·(H−2t) = ${b}×${h}−${ib}×${ih}`); break;
+    }
+    case 'flat': {
+      const w=msGV('ms_fb_w'), t=msGV('ms_fb_t'), l=msGV('ms_fb_l');
+      if(!w||!t||!l) return alert('Enter valid values');
+      msShowResult('ms_res_flat', w*t, l, `A = W×T = ${w}×${t}`); break;
+    }
+    case 'tee': {
+      const b=msGV('ms_tee_b'), tf=msGV('ms_tee_tf'), h=msGV('ms_tee_h'), tw=msGV('ms_tee_tw'), l=msGV('ms_tee_l');
+      if(!b||!tf||!h||!tw||!l) return alert('Enter valid values');
+      msShowResult('ms_res_tee', b*tf+h*tw, l, `A = (B×tf)+(H×tw) = (${b}×${tf})+(${h}×${tw})`); break;
+    }
+    case 'zee': {
+      const b1=msGV('ms_z_b1'), b2=msGV('ms_z_b2'), h=msGV('ms_z_h'), t=msGV('ms_z_t'), l=msGV('ms_z_l');
+      if(!b1||!b2||!h||!t||!l) return alert('Enter valid values');
+      msShowResult('ms_res_zee', (b1+b2+h)*t, l, `A = (B1+B2+H)×t = (${b1}+${b2}+${h})×${t}`); break;
+    }
+    case 'angle': {
+      const a=msGV('ms_ang_a'), b=msGV('ms_ang_b'), t=msGV('ms_ang_t'), l=msGV('ms_ang_l');
+      if(!a||!b||!t||!l) return alert('Enter valid values');
+      msShowResult('ms_res_angle', (a+b-t)*t, l, `A = (A+B−t)×t = (${a}+${b}−${t})×${t}`); break;
+    }
+    case 'channel': {
+      const h=msGV('ms_ch_h'), b=msGV('ms_ch_b'), tw=msGV('ms_ch_tw'), tf=msGV('ms_ch_tf'), l=msGV('ms_ch_l');
+      if(!h||!b||!tw||!tf||!l) return alert('Enter valid values');
+      const wH=h-2*tf;
+      msShowResult('ms_res_channel', 2*(b*tf)+wH*tw, l, `A = 2·(B×tf)+(H−2tf)×tw = 2·(${b}×${tf})+${wH}×${tw}`); break;
+    }
+  }
+}
+
+/* ══════════════════════════════════════
+   ALUMINIUM CALCULATOR
+══════════════════════════════════════ */
+const AL_RHO = 2700;
+
+function alShow(name) {
+  document.querySelectorAll('#cal-al .al-calc-card').forEach(c => c.classList.add('al-hidden'));
+  document.querySelectorAll('#cal-al .al-sec-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('al_sec_' + name).classList.remove('al-hidden');
+  document.querySelector(`#cal-al .al-sec-btn[data-alsec="${name}"]`).classList.add('active');
+}
+
+function alGV(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function alShowResult(id, area_mm2, length_mm, formula) {
+  const mass = (area_mm2 * length_mm / 1e9) * AL_RHO;
+  const unitWt = (area_mm2 / 1e6) * AL_RHO;
+  const el = document.getElementById(id);
+  el.innerHTML = `
+    <div class="al-result-title">✓ Calculation Result</div>
+    <div class="al-result-grid">
+      <div class="al-result-item"><div class="r-label">Cross-Section Area</div><div class="r-value">${area_mm2.toFixed(3)}<span class="r-unit">mm²</span></div></div>
+      <div class="al-result-item"><div class="r-label">Unit Weight</div><div class="r-value">${unitWt.toFixed(4)}<span class="r-unit">kg/m</span></div></div>
+      <div class="al-result-item"><div class="r-label">Total Weight (${(length_mm/1000).toFixed(3)} m)</div><div class="r-value">${mass.toFixed(4)}<span class="r-unit">kg</span></div></div>
+      <div class="al-result-item"><div class="r-label">Equivalent</div><div class="r-value">${(mass*1000).toFixed(1)}<span class="r-unit">g</span></div></div>
+    </div>
+    <div class="al-formula-note">ρ(Al) = 2700 kg/m³ | ${formula} = ${area_mm2.toFixed(3)} mm²<br>Vol = ${(area_mm2*length_mm/1e6).toFixed(4)} cm³</div>`;
+  el.classList.add('show');
+}
+
+function alHollowRHS(b, h, t) { return b*h-(b-2*t)*(h-2*t); }
+
+function alCalc(type) {
+  switch(type) {
+    case 'flat': {
+      const w=alGV('al_fb_w'), t=alGV('al_fb_t'), l=alGV('al_fb_l');
+      if(!w||!t||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_flat', w*t, l, `A = W×T = ${w}×${t}`); break;
+    }
+    case 'angle': {
+      const a=alGV('al_ang_a'), b=alGV('al_ang_b'), t=alGV('al_ang_t'), l=alGV('al_ang_l');
+      if(!a||!b||!t||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_angle', (a+b-t)*t, l, `A = (A+B−t)×t = (${a}+${b}−${t})×${t}`); break;
+    }
+    case 'tee': {
+      const b=alGV('al_tee_b'), tf=alGV('al_tee_tf'), h=alGV('al_tee_h'), tw=alGV('al_tee_tw'), l=alGV('al_tee_l');
+      if(!b||!tf||!h||!tw||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_tee', b*tf+h*tw, l, `A = B×tf+H×tw = ${b}×${tf}+${h}×${tw}`); break;
+    }
+    case 'zee': {
+      const b1=alGV('al_z_b1'), b2=alGV('al_z_b2'), h=alGV('al_z_h'), t=alGV('al_z_t'), l=alGV('al_z_l');
+      if(!b1||!b2||!h||!t||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_zee', (b1+b2+h)*t, l, `A = (B1+B2+H)×t = (${b1}+${b2}+${h})×${t}`); break;
+    }
+    case 'channel': {
+      const h=alGV('al_ch_h'), b=alGV('al_ch_b'), tw=alGV('al_ch_tw'), tf=alGV('al_ch_tf'), l=alGV('al_ch_l');
+      if(!h||!b||!tw||!tf||!l) return alert('Enter all dimensions');
+      const wH=h-2*tf;
+      alShowResult('al_res_channel', 2*(b*tf)+wH*tw, l, `A = 2(B×tf)+(H−2tf)×tw`); break;
+    }
+    case 'round_solid': {
+      const d=alGV('al_rs_d'), l=alGV('al_rs_l');
+      if(!d||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_round_solid', Math.PI*d*d/4, l, `A = π·D²/4`); break;
+    }
+    case 'square_solid': {
+      const a=alGV('al_sq_a'), l=alGV('al_sq_l');
+      if(!a||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_square_solid', a*a, l, `A = a² = ${a}²`); break;
+    }
+    case 'round_hollow': {
+      const od=alGV('al_rh_od'), t=alGV('al_rh_t'), l=alGV('al_rh_l');
+      if(!od||!t||!l) return alert('Enter all dimensions');
+      if(t>=od/2) return alert('Wall thickness must be less than radius');
+      const id=od-2*t;
+      alShowResult('al_res_round_hollow', Math.PI*(od*od-id*id)/4, l, `A = π/4·(OD²−ID²), ID=${id}mm`); break;
+    }
+    case 'square_hollow': {
+      const a=alGV('al_sh_a'), t=alGV('al_sh_t'), l=alGV('al_sh_l');
+      if(!a||!t||!l) return alert('Enter all dimensions');
+      if(2*t>=a) return alert('Wall thickness too large');
+      const i=a-2*t;
+      alShowResult('al_res_square_hollow', a*a-i*i, l, `A = A²−(A−2t)² = ${a}²−${i}²`); break;
+    }
+    case 'rhs': {
+      const b=alGV('al_rhs_b'), h=alGV('al_rhs_h'), t=alGV('al_rhs_t'), l=alGV('al_rhs_l');
+      if(!b||!h||!t||!l) return alert('Enter all dimensions');
+      const ib=b-2*t, ih=h-2*t;
+      if(ib<=0||ih<=0) return alert('Wall thickness too large');
+      alShowResult('al_res_rhs', b*h-ib*ih, l, `A = B·H−(B−2t)·(H−2t)`); break;
+    }
+    case 'casement': {
+      const b=alGV('al_cas_b'), h=alGV('al_cas_h'), t=alGV('al_cas_t'), l=alGV('al_cas_l');
+      if(!b||!h||!t||!l) return alert('Enter all dimensions');
+      if(b-2*t<=0||h-2*t<=0) return alert('Wall thickness too large');
+      alShowResult('al_res_casement', alHollowRHS(b,h,t), l, `Hollow RHS: A = B·H−(B−2t)·(H−2t)`); break;
+    }
+    case 'sliding': {
+      const b=alGV('al_sl_b'), h=alGV('al_sl_h'), t=alGV('al_sl_t'), l=alGV('al_sl_l');
+      if(!b||!h||!t||!l) return alert('Enter all dimensions');
+      if(b-2*t<=0||h-2*t<=0) return alert('Wall thickness too large');
+      alShowResult('al_res_sliding', alHollowRHS(b,h,t), l, `Hollow RHS: A = B·H−(B−2t)·(H−2t)`); break;
+    }
+    case 'glazing': {
+      const a=alGV('al_bead_a'), b=alGV('al_bead_b'), t=alGV('al_bead_t'), l=alGV('al_bead_l');
+      if(!a||!b||!t||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_glazing', (a+b-t)*t, l, `Angle bead: A = (A+B−t)×t`); break;
+    }
+    case 'louvre': {
+      const w=alGV('al_lv_w'), t=alGV('al_lv_t'), l=alGV('al_lv_l');
+      if(!w||!t||!l) return alert('Enter all dimensions');
+      alShowResult('al_res_louvre', w*t, l, `A = W×T = ${w}×${t}`); break;
+    }
+    case 'curtain': {
+      const b=alGV('al_cw_b'), h=alGV('al_cw_h'), t=alGV('al_cw_t'), l=alGV('al_cw_l');
+      if(!b||!h||!t||!l) return alert('Enter all dimensions');
+      if(b-2*t<=0||h-2*t<=0) return alert('Wall thickness too large');
+      alShowResult('al_res_curtain', alHollowRHS(b,h,t), l, `Hollow RHS: A = B·H−(B−2t)·(H−2t)`); break;
+    }
+  }
+}
+
+function alFill(pfx, b, h, t) {
+  document.getElementById(`al_${pfx}_b`).value = b;
+  document.getElementById(`al_${pfx}_h`).value = h;
+  document.getElementById(`al_${pfx}_t`).value = t;
+}
+function alFillBead(a, b, t) {
+  document.getElementById('al_bead_a').value = a;
+  document.getElementById('al_bead_b').value = b;
+  document.getElementById('al_bead_t').value = t;
+}
+function alFillLV(w, t) {
+  document.getElementById('al_lv_w').value = w;
+  document.getElementById('al_lv_t').value = t;
+}
+
+/* ══════════════════════════════════════
+   STAINLESS STEEL CALCULATOR
+══════════════════════════════════════ */
+let SS_RHO = 7930;
+
+function ssSetGrade(btn, density) {
+  document.querySelectorAll('#cal-ss .ss-gb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  SS_RHO = density;
+  document.getElementById('ss_dens_disp').textContent = `ρ = ${density} kg/m³`;
+}
+
+function ssShow(name) {
+  document.querySelectorAll('#cal-ss .ss-card').forEach(c => c.classList.add('ss-hidden'));
+  document.querySelectorAll('#cal-ss .ss-sbb').forEach(b => b.classList.remove('active'));
+  document.getElementById('ss_sec_' + name).classList.remove('ss-hidden');
+  document.querySelector(`#cal-ss .ss-sbb[data-sssec="${name}"]`).classList.add('active');
+}
+
+function ssGV(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function ssSet(id, v) { document.getElementById(id).value = v; }
+function ssSet2(id1, v1, id2, v2) { ssSet(id1,v1); ssSet(id2,v2); }
+function ssSetAng(a,b,t) { ssSet('ss_ang_a',a); ssSet('ss_ang_b',b); ssSet('ss_ang_t',t); }
+function ssSetPipe(od,t) { ssSet('ss_chs_od',od); ssSet('ss_chs_t',t); }
+function ssSetSHS(a,t) { ssSet('ss_shs_a',a); ssSet('ss_shs_t',t); }
+function ssSetHR(od,t) { ssSet('ss_hr_od',od); ssSet('ss_hr_t',t); }
+function ssSetBal(a,t) { ssSet('ss_bal_a',a); ssSet('ss_bal_t',t); }
+function ssSetDF(b,h,t) { ssSet('ss_df_b',b); ssSet('ss_df_h',h); ssSet('ss_df_t',t); }
+function ssFillSheet(l,w,t,n) { ssSet('ss_sh_l',l); ssSet('ss_sh_w',w); ssSet('ss_sh_t',t); ssSet('ss_sh_n',n); }
+
+function ssShowResult(resId, area_mm2, length_mm, formula, qty) {
+  qty = qty||1;
+  const vol_m3 = (area_mm2*length_mm*qty)/1e9;
+  const mass = vol_m3*SS_RHO;
+  const unitWt = (area_mm2/1e6)*SS_RHO;
+  const el = document.getElementById(resId);
+  el.innerHTML = `
+    <div class="ss-rt">✓ Result &nbsp;ρ = ${SS_RHO} kg/m³${qty>1?' · qty='+qty:''}</div>
+    <div class="ss-rg">
+      <div class="ss-ri"><div class="ss-rl">Section Area</div><div class="ss-rv">${area_mm2.toFixed(3)}<span class="ss-ru">mm²</span></div></div>
+      <div class="ss-ri"><div class="ss-rl">Unit Weight</div><div class="ss-rv">${unitWt.toFixed(4)}<span class="ss-ru">kg/m</span></div></div>
+      <div class="ss-ri"><div class="ss-rl">Wt / piece</div><div class="ss-rv">${(mass/qty).toFixed(4)}<span class="ss-ru">kg</span></div></div>
+      ${qty>1?`<div class="ss-ri"><div class="ss-rl">Total (×${qty})</div><div class="ss-rv">${mass.toFixed(4)}<span class="ss-ru">kg</span></div></div>`:''}
+      <div class="ss-ri"><div class="ss-rl">Tonnes</div><div class="ss-rv">${(mass/1000).toFixed(5)}<span class="ss-ru">t</span></div></div>
+    </div>
+    <div class="ss-fml">${formula}<br>Vol = ${(vol_m3*1e6).toFixed(4)} cm³ | Mass = V × ρ</div>`;
+  el.classList.add('show');
+}
+
+function ssShowSheetResult(resId, area_mm2, thick, formula, n) {
+  const mass = (area_mm2*thick*n/1e9)*SS_RHO;
+  const el = document.getElementById(resId);
+  el.innerHTML = `
+    <div class="ss-rt">✓ Result &nbsp;ρ = ${SS_RHO} kg/m³</div>
+    <div class="ss-rg">
+      <div class="ss-ri"><div class="ss-rl">Area per piece</div><div class="ss-rv">${(area_mm2/1e6).toFixed(4)}<span class="ss-ru">m²</span></div></div>
+      <div class="ss-ri"><div class="ss-rl">Wt per piece</div><div class="ss-rv">${(mass/n).toFixed(3)}<span class="ss-ru">kg</span></div></div>
+      <div class="ss-ri"><div class="ss-rl">Total (n=${n})</div><div class="ss-rv">${mass.toFixed(3)}<span class="ss-ru">kg</span></div></div>
+      <div class="ss-ri"><div class="ss-rl">Tonnes</div><div class="ss-rv">${(mass/1000).toFixed(5)}<span class="ss-ru">t</span></div></div>
+    </div>
+    <div class="ss-fml">${formula}</div>`;
+  el.classList.add('show');
+}
+
+function ssCalc(type) {
+  switch(type) {
+    case 'flat': { const w=ssGV('ss_fb_w'),t=ssGV('ss_fb_t'),l=ssGV('ss_fb_l'); if(!w||!t||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_flat',w*t,l,`A = W×T = ${w}×${t}`); break; }
+    case 'sheet': { const l=ssGV('ss_sh_l'),w=ssGV('ss_sh_w'),t=ssGV('ss_sh_t'),n=ssGV('ss_sh_n')||1; if(!l||!w||!t) return alert('Enter all dimensions'); ssShowSheetResult('ss_res_sheet',l*w,t,`A=${l}×${w}mm, T=${t}mm, n=${n}`,n); break; }
+    case 'expjoint': { const w=ssGV('ss_ej_w'),t=ssGV('ss_ej_t'),l=ssGV('ss_ej_l'); if(!w||!t||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_expjoint',w*t,l,`A = W×T = ${w}×${t}`); break; }
+    case 'stiffener': { const l=ssGV('ss_st_l'),w=ssGV('ss_st_w'),t=ssGV('ss_st_t'),n=ssGV('ss_st_n')||1; if(!l||!w||!t) return alert('Enter all dimensions'); ssShowSheetResult('ss_res_stiffener',l*w,t,`Plate: L×W×T = ${l}×${w}×${t}mm, n=${n}`,n); break; }
+    case 'round_solid': { const d=ssGV('ss_rs_d'),l=ssGV('ss_rs_l'); if(!d||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_round_solid',Math.PI*d*d/4,l,`A = π·D²/4`); break; }
+    case 'sq_solid': { const a=ssGV('ss_sq_a'),l=ssGV('ss_sq_l'); if(!a||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_sq_solid',a*a,l,`A = a²`); break; }
+    case 'angle': { const a=ssGV('ss_ang_a'),b=ssGV('ss_ang_b'),t=ssGV('ss_ang_t'),l=ssGV('ss_ang_l'); if(!a||!b||!t||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_angle',(a+b-t)*t,l,`A = (A+B−t)×t`); break; }
+    case 'channel': { const h=ssGV('ss_ch_h'),b=ssGV('ss_ch_b'),tw=ssGV('ss_ch_tw'),tf=ssGV('ss_ch_tf'),l=ssGV('ss_ch_l'); if(!h||!b||!tw||!tf||!l) return alert('Enter all dimensions'); const wH=h-2*tf; ssShowResult('ss_res_channel',2*(b*tf)+wH*tw,l,`A = 2(B×tf)+(H−2tf)×tw`); break; }
+    case 'tee': { const b=ssGV('ss_tee_b'),tf=ssGV('ss_tee_tf'),h=ssGV('ss_tee_h'),tw=ssGV('ss_tee_tw'),l=ssGV('ss_tee_l'); if(!b||!tf||!h||!tw||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_tee',b*tf+h*tw,l,`A = B×tf+H×tw`); break; }
+    case 'zee': { const b1=ssGV('ss_z_b1'),b2=ssGV('ss_z_b2'),h=ssGV('ss_z_h'),t=ssGV('ss_z_t'),l=ssGV('ss_z_l'); if(!b1||!b2||!h||!t||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_zee',(b1+b2+h)*t,l,`A = (B1+B2+H)×t`); break; }
+    case 'chs': { const od=ssGV('ss_chs_od'),t=ssGV('ss_chs_t'),l=ssGV('ss_chs_l'); if(!od||!t||!l) return alert('Enter all dimensions'); if(t>=od/2) return alert('Wall thickness must be less than radius'); const id=od-2*t; ssShowResult('ss_res_chs',Math.PI*(od*od-id*id)/4,l,`A = π/4·(OD²−ID²), ID=${id.toFixed(2)}mm`); break; }
+    case 'shs': { const a=ssGV('ss_shs_a'),t=ssGV('ss_shs_t'),l=ssGV('ss_shs_l'); if(!a||!t||!l) return alert('Enter all dimensions'); if(2*t>=a) return alert('Wall thickness too large'); const i=a-2*t; ssShowResult('ss_res_shs',a*a-i*i,l,`A = A²−(A−2t)²`); break; }
+    case 'rhs': { const b=ssGV('ss_rhs_b'),h=ssGV('ss_rhs_h'),t=ssGV('ss_rhs_t'),l=ssGV('ss_rhs_l'); if(!b||!h||!t||!l) return alert('Enter all dimensions'); const ib=b-2*t,ih=h-2*t; if(ib<=0||ih<=0) return alert('Wall thickness too large'); ssShowResult('ss_res_rhs',b*h-ib*ih,l,`A = B·H−(B−2t)·(H−2t)`); break; }
+    case 'handrail': { const od=ssGV('ss_hr_od'),t=ssGV('ss_hr_t'),l=ssGV('ss_hr_l'); if(!od||!t||!l) return alert('Enter all dimensions'); if(t>=od/2) return alert('Wall thickness must be less than radius'); const id=od-2*t; ssShowResult('ss_res_handrail',Math.PI*(od*od-id*id)/4,l,`CHS: A = π/4·(OD²−ID²)`); break; }
+    case 'baluster': { const a=ssGV('ss_bal_a'),t=ssGV('ss_bal_t'),l=ssGV('ss_bal_l'); if(!a||!l) return alert('Enter Side and Length'); let A,f; if(!t){A=a*a;f=`Solid: A = a²`;}else{if(2*t>=a)return alert('Wall thickness too large');const i=a-2*t;A=a*a-i*i;f=`SHS: A = A²−(A−2t)²`;} ssShowResult('ss_res_baluster',A,l,f); break; }
+    case 'wire': { const d=ssGV('ss_wr_d'),l=ssGV('ss_wr_l'); if(!d||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_wire',Math.PI*d*d/4,l,`A = π·D²/4`); break; }
+    case 'wiremesh': {
+      const d=ssGV('ss_wm_d'),p=ssGV('ss_wm_p'),L=ssGV('ss_wm_l'),W=ssGV('ss_wm_w');
+      if(!d||!p||!L||!W) return alert('Enter all dimensions');
+      if(d>=p) return alert('Wire diameter must be less than pitch');
+      const wt_m2=SS_RHO*(Math.PI*d*d/4)/1e6*(2/p*1000);
+      const totalA=(L*W)/1e6, mass=wt_m2*totalA;
+      const el=document.getElementById('ss_res_wiremesh');
+      el.innerHTML=`<div class="ss-rt">✓ Wire Mesh Result ρ = ${SS_RHO} kg/m³</div><div class="ss-rg"><div class="ss-ri"><div class="ss-rl">Wt per m²</div><div class="ss-rv">${wt_m2.toFixed(3)}<span class="ss-ru">kg/m²</span></div></div><div class="ss-ri"><div class="ss-rl">Sheet Area</div><div class="ss-rv">${totalA.toFixed(4)}<span class="ss-ru">m²</span></div></div><div class="ss-ri"><div class="ss-rl">Total Wt</div><div class="ss-rv">${mass.toFixed(4)}<span class="ss-ru">kg</span></div></div><div class="ss-ri"><div class="ss-rl">Tonnes</div><div class="ss-rv">${(mass/1000).toFixed(6)}<span class="ss-ru">t</span></div></div></div><div class="ss-fml">d=${d}mm, p=${p}mm, ${L}×${W}mm sheet</div>`;
+      el.classList.add('show'); break;
+    }
+    case 'doorframe': { const b=ssGV('ss_df_b'),h=ssGV('ss_df_h'),t=ssGV('ss_df_t'),l=ssGV('ss_df_l'); if(!b||!h||!t||!l) return alert('Enter all dimensions'); const ib=b-2*t,ih=h-2*t; if(ib<=0||ih<=0) return alert('Wall thickness too large'); ssShowResult('ss_res_doorframe',b*h-ib*ih,l,`Hollow RHS: A = B·H−(B−2t)·(H−2t)`); break; }
+    case 'louvre': { const w=ssGV('ss_lv_w'),t=ssGV('ss_lv_t'),l=ssGV('ss_lv_l'),n=ssGV('ss_lv_n')||1; if(!w||!t||!l) return alert('Enter all dimensions'); ssShowResult('ss_res_louvre',w*t,l,`A = W×T = ${w}×${t}`,n); break; }
+    case 'sink': { const l=ssGV('ss_sk_l'),w=ssGV('ss_sk_w'),t=ssGV('ss_sk_t'),n=ssGV('ss_sk_n')||1; if(!l||!w||!t) return alert('Enter all dimensions'); ssShowSheetResult('ss_res_sink',l*w,t,`Dev area: L×W×T = ${l}×${w}×${t}mm, n=${n}`,n); break; }
+  }
+}
+
+/* SS Railing Builder */
+const SS_RAIL_TYPES = ['CHS (Round Pipe)','SHS (Square Hollow)','Flat Bar','Solid Round Bar','Solid Square Bar'];
+let ssRailCount = 0;
+
+function ssAddRailRow(desc, od, t, type, len) {
+  ssRailCount++;
+  const id = ssRailCount;
+  const container = document.getElementById('ssRailRows');
+  const div = document.createElement('div');
+  div.id = 'ssr_' + id;
+  const opts = SS_RAIL_TYPES.map((t2,i) => `<option value="${i}">${t2}</option>`).join('');
+  div.style.cssText = 'display:grid;grid-template-columns:1.6fr 72px 64px 90px 84px 36px;gap:6px;margin-bottom:6px;min-width:520px;align-items:end;';
+  div.innerHTML = `
+    <div class="ss-field" style="margin-bottom:0"><div class="ss-ir"><input type="text" id="ssrd_${id}" placeholder="e.g. Top Rail" value="${desc||''}" style="font-size:.8rem;font-family:inherit"></div></div>
+    <div class="ss-field" style="margin-bottom:0"><div class="ss-ir"><input type="number" id="ssro_${id}" placeholder="OD/Side" value="${od||''}" min="0"><span class="ss-u">mm</span></div></div>
+    <div class="ss-field" style="margin-bottom:0"><div class="ss-ir"><input type="number" id="ssrt_${id}" placeholder="t" value="${t||''}" min="0"><span class="ss-u">mm</span></div></div>
+    <div class="ss-field" style="margin-bottom:0"><div class="ss-ir"><select id="ssrtype_${id}">${opts}</select></div></div>
+    <div class="ss-field" style="margin-bottom:0"><div class="ss-ir"><input type="number" id="ssrl_${id}" placeholder="Length" value="${len||1000}" min="0"><span class="ss-u">mm</span></div></div>
+    <button class="ss-del-btn" onclick="document.getElementById('ssr_${id}').remove()">✕</button>`;
+  container.appendChild(div);
+}
+
+function ssCalcRailing() {
+  const rows = document.querySelectorAll('#ssRailRows > div');
+  if(!rows.length) { alert('Add at least one member row'); return; }
+  let total=0, breakdown='';
+  for(const row of rows) {
+    const id=row.id.replace('ssr_','');
+    const desc=document.getElementById('ssrd_'+id)?.value||'Member';
+    const od=parseFloat(document.getElementById('ssro_'+id)?.value)||0;
+    const t=parseFloat(document.getElementById('ssrt_'+id)?.value)||0;
+    const type=parseInt(document.getElementById('ssrtype_'+id)?.value)||0;
+    const len=parseFloat(document.getElementById('ssrl_'+id)?.value)||0;
+    if(!od||!len) continue;
+    let A=0;
+    if(type===0){if(!t||t>=od/2)continue;const id2=od-2*t;A=Math.PI*(od*od-id2*id2)/4;}
+    else if(type===1){if(!t||2*t>=od)continue;const i=od-2*t;A=od*od-i*i;}
+    else if(type===2){if(!t)continue;A=od*t;}
+    else if(type===3){A=Math.PI*od*od/4;}
+    else if(type===4){A=od*od;}
+    const uw=(A/1e6)*SS_RHO, mass=(A*len/1e9)*SS_RHO;
+    total+=mass;
+    breakdown+=`<tr><td>${desc}</td><td>${SS_RAIL_TYPES[type]}</td><td>${od}</td><td>${t||'—'}</td><td>${(len/1000).toFixed(3)}</td><td>${uw.toFixed(3)}</td><td><strong>${mass.toFixed(3)}</strong></td></tr>`;
+  }
+  const el=document.getElementById('ss_res_railing');
+  el.innerHTML=`<div class="ss-rt">✓ Total Railing Weight ρ = ${SS_RHO} kg/m³</div><div class="ss-rg" style="margin-bottom:12px"><div class="ss-ri"><div class="ss-rl">Total Weight</div><div class="ss-rv">${total.toFixed(3)}<span class="ss-ru">kg</span></div></div><div class="ss-ri"><div class="ss-rl">Tonnes</div><div class="ss-rv">${(total/1000).toFixed(5)}<span class="ss-ru">t</span></div></div></div><div class="ss-tw"><table><thead><tr><th>Member</th><th>Type</th><th>Dim</th><th>t</th><th>L(m)</th><th>kg/m</th><th>Wt(kg)</th></tr></thead><tbody>${breakdown}</tbody></table></div>`;
+  el.classList.add('show');
+}
+
+// Prepopulate railing builder
+ssAddRailRow('Top Rail (50.8 CHS)', 50.8, 2.0, 0, 6000);
+ssAddRailRow('Mid Rail (38.1 CHS)', 38.1, 1.6, 0, 6000);
+ssAddRailRow('Bottom Rail (38.1 CHS)', 38.1, 1.6, 0, 6000);
+ssAddRailRow('Baluster 25.4 CHS @ 100mm', 25.4, 1.6, 0, 900);
+ssAddRailRow('Newel Post (63.5 CHS)', 63.5, 3.0, 0, 1000);
+</script>
+</body>
+</html>
